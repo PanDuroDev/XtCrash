@@ -16,7 +16,7 @@
             android:id="@+id/tvAppTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="CrashX v7 Test App"
+            android:text="XtCrash v7 Test App"
             android:textColor="#111827"
             android:textSize="30sp"
             android:textStyle="bold" />
@@ -26,7 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Test custom crash screens, crash IDs, restart behavior, crash report sharing, activity logs, and different CrashX configurations."
+            android:text="Test custom crash screens, crash IDs, restart behavior, crash report sharing, activity logs, and different XtCrash configurations."
             android:textColor="#4B5563"
             android:textSize="15sp" />
 
@@ -153,29 +153,29 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="26dp"
-            android:text="CrashX Enable / Disable"
+            android:text="XtCrash Enable / Disable"
             android:textColor="#111827"
             android:textSize="18sp"
             android:textStyle="bold" />
 
         <Button
-            android:id="@+id/btnDisableCrashX"
+            android:id="@+id/btnDisableXtCrash"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:backgroundTint="#374151"
-            android:text="Disable CrashX"
+            android:text="Disable XtCrash"
             android:textAllCaps="false"
             android:textColor="#FFFFFF"
             android:textStyle="bold" />
 
         <Button
-            android:id="@+id/btnEnableCrashX"
+            android:id="@+id/btnEnableXtCrash"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:backgroundTint="#111827"
-            android:text="Enable CrashX"
+            android:text="Enable XtCrash"
             android:textAllCaps="false"
             android:textColor="#FFFFFF"
             android:textStyle="bold" />
@@ -187,7 +187,7 @@
             android:layout_marginTop="26dp"
             android:layout_marginBottom="20dp"
             android:gravity="center"
-            android:text="CrashX v7 testing screen for development only"
+            android:text="XtCrash v7 testing screen for development only"
             android:textColor="#6B7280"
             android:textSize="13sp" />
 

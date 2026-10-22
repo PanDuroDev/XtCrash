@@ -71,7 +71,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
                     android:gravity="center"
-                    android:text="Crash ID: CRASHX-000000000000"
+                    android:text="Crash ID: XTCRASH-000000000000"
                     android:textColor="#6B7280"
                     android:textSize="12sp" />
 
@@ -92,7 +92,7 @@
                     android:layout_height="50dp"
                     android:layout_marginTop="10dp"
                     android:background="#D50000"
-                    android:text="@string/crashx_send_crash_report"
+                    android:text="@string/xtcrash_send_crash_report"
                     android:textAllCaps="false"
                     android:textColor="@android:color/white"
                     android:textStyle="bold"
@@ -126,7 +126,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
                     android:gravity="center"
-                    android:text="CrashX v7.0.0"
+                    android:text="XtCrash v1.0.0"
                     android:textColor="#6B7280"
                     android:textSize="12sp" />
 

@@ -12,7 +12,7 @@ import java.io.Serializable
 import java.lang.reflect.Modifier
 
 /**
- * CrashX configuration.
+ * XtCrash configuration.
  *
  * <p>Originally derived from CustomActivityOnCrash by Eduard Ereza Martínez.</p>
  * <p>Modernized and maintained as CrashX by TutorialsAndroid.</p>
@@ -30,7 +30,7 @@ class CrashConfig : Serializable {
         /** Silently closes the app when a background crash happens. */
         const val BACKGROUND_MODE_SILENT = 0
 
-        /** Shows the custom CrashX screen even if the app crashes in the background. */
+        /** Shows the custom XtCrash screen even if the app crashes in the background. */
         const val BACKGROUND_MODE_SHOW_CUSTOM = 1
 
         /** Lets the original/default uncaught exception handler handle background crashes. */
@@ -39,7 +39,7 @@ class CrashConfig : Serializable {
         private const val DEFAULT_ERROR_TITLE = "Something went wrong"
         private const val DEFAULT_ERROR_MESSAGE = "The app ran into an unexpected problem. You can restart the app or send a crash report."
         private const val DEFAULT_REPORT_BUTTON_TEXT = "Send crash report"
-        private const val DEFAULT_CRASH_ID_PREFIX = "CRASHX"
+        private const val DEFAULT_CRASH_ID_PREFIX = "XTCRASH"
 
         private fun safeString(value: String?, fallback: String): String {
             return emptyToNull(value) ?: fallback
@@ -80,7 +80,7 @@ class CrashConfig : Serializable {
 
     var eventListener: CrashActivity.EventListener? = null
 
-    // CrashX v7 UI options
+    // XtCrash v7 UI options
     var errorTitle: String? = DEFAULT_ERROR_TITLE
         get() = safeString(field, DEFAULT_ERROR_TITLE)
         set(value) {
@@ -209,7 +209,7 @@ class CrashConfig : Serializable {
     var metaTextColor: Int = 0xFF6B7280.toInt()
 
     /**
-     * Fluent builder for CrashX configuration.
+     * Fluent builder for XtCrash configuration.
      */
     class Builder {
 

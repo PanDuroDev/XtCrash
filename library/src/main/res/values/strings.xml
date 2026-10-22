@@ -9,12 +9,12 @@
     <string name="customactivityoncrash_error_activity_error_details_close">Close</string>
     <string name="customactivityoncrash_error_activity_error_details_copy">Copy</string>
     <string name="customactivityoncrash_error_activity_error_details_copied">Copied to clipboard</string>
-    <string name="customactivityoncrash_error_activity_error_details_clipboard_label">CrashX error information</string>
+    <string name="customactivityoncrash_error_activity_error_details_clipboard_label">XtCrash error information</string>
 
-    <!-- CrashX v7 strings. -->
-    <string name="crashx_send_crash_report">Send crash report</string>
-    <string name="crashx_crash_id_format">Crash ID: %1$s</string>
-    <string name="crashx_version_format">CrashX v%1$s</string>
-    <string name="crashx_default_report_subject">Crash report - %1$s - %2$s</string>
-    <string name="crashx_no_share_app_found">No app found to share the report. Crash details were copied instead.</string>
+    <!-- XtCrash strings. -->
+    <string name="xtcrash_send_crash_report">Send crash report</string>
+    <string name="xtcrash_crash_id_format">Crash ID: %1$s</string>
+    <string name="xtcrash_version_format">XtCrash v%1$s</string>
+    <string name="xtcrash_default_report_subject">Crash report - %1$s - %2$s</string>
+    <string name="xtcrash_no_share_app_found">No app found to share the report. Crash details were copied instead.</string>
 </resources>

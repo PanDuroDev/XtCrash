@@ -131,7 +131,7 @@ fun XtCrashErrorScreen(
 
                     if (config.isShowCrashId) {
                         Text(
-                                text = stringResource(R.string.crashx_crash_id_format, crashId),
+                                text = stringResource(R.string.xtcrash_crash_id_format, crashId),
                                 textAlign = TextAlign.Center,
                                 color = toComposeColor(config.metaTextColor),
                                 fontSize = 12.sp,
@@ -184,7 +184,7 @@ fun XtCrashErrorScreen(
 
                     if (config.isShowAppInfo) {
                         Text(
-                                text = stringResource(R.string.crashx_version_format, CrashActivity.VERSION),
+                                text = stringResource(R.string.xtcrash_version_format, CrashActivity.VERSION),
                                 textAlign = TextAlign.Center,
                                 color = toComposeColor(config.metaTextColor),
                                 fontSize = 12.sp,
@@ -269,7 +269,7 @@ private fun Context.copyErrorToClipboard(errorDetails: String) {
 
 private fun Context.shareCrashReport(config: CrashConfig, errorDetails: String, crashId: String) {
     val subject = config.reportSubject
-            ?: getString(R.string.crashx_default_report_subject, packageName, crashId)
+            ?: getString(R.string.xtcrash_default_report_subject, packageName, crashId)
     val chooserTitle = requireNotNull(config.reportButtonText)
 
     val sendIntent = Intent(Intent.ACTION_SEND)
@@ -286,7 +286,7 @@ private fun Context.shareCrashReport(config: CrashConfig, errorDetails: String, 
         startActivity(Intent.createChooser(sendIntent, chooserTitle))
     } catch (e: ActivityNotFoundException) {
         copyErrorToClipboard(errorDetails)
-        Toast.makeText(this, R.string.crashx_no_share_app_found, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, R.string.xtcrash_no_share_app_found, Toast.LENGTH_SHORT).show()
     }
 }
 

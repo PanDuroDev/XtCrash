@@ -8,7 +8,7 @@ import android.net.Uri
 import io.github.soufianodev.xtcrash.CrashActivity
 
 /**
- * Auto-initializes CrashX through Android's ContentProvider startup mechanism.
+ * Auto-initializes XtCrash through Android's ContentProvider startup mechanism.
  *
  * <p>Originally derived from CustomActivityOnCrash by Eduard Ereza Martínez.</p>
  * <p>Modernized and maintained as CrashX by TutorialsAndroid.</p>

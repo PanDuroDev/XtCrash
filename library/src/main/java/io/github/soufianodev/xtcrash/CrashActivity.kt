@@ -31,7 +31,7 @@ import java.util.UUID
 import java.util.zip.ZipFile
 
 /**
- * CrashX runtime crash handler.
+ * XtCrash runtime crash handler.
  *
  * <p>Originally derived from CustomActivityOnCrash by Eduard Ereza Martínez.</p>
  * <p>Modernized and maintained as CrashX by TutorialsAndroid.</p>
@@ -40,7 +40,7 @@ object CrashActivity {
 
     const val VERSION = "1.0.0"
 
-    private const val TAG = "CrashX"
+    private const val TAG = "XtCrash"
 
     private const val EXTRA_CONFIG = "io.github.soufianodev.xtcrash.EXTRA_CONFIG"
     private const val EXTRA_STACK_TRACE = "io.github.soufianodev.xtcrash.EXTRA_STACK_TRACE"
@@ -55,7 +55,7 @@ object CrashActivity {
     private const val INTENT_ACTION_RESTART_ACTIVITY = "io.github.soufianodev.xtcrash.RESTART"
     private const val DEFAULT_HANDLER_PACKAGE_NAME = "com.android.internal.os"
 
-    private const val SHARED_PREFERENCES_FILE = "crashx"
+    private const val SHARED_PREFERENCES_FILE = "xtcrash"
     private const val SHARED_PREFERENCES_FIELD_TIMESTAMP = "last_crash_timestamp"
 
     private var application: Application? = null
@@ -79,29 +79,29 @@ object CrashActivity {
             application = app
             val oldHandler = Thread.getDefaultUncaughtExceptionHandler()
 
-            if (oldHandler is CrashXUncaughtExceptionHandler) {
-                Log.i(TAG, "CrashX is already installed.")
+            if (oldHandler is XtCrashUncaughtExceptionHandler) {
+                Log.i(TAG, "XtCrash is already installed.")
                 return
             }
 
             if (oldHandler != null && !oldHandler.javaClass.name.startsWith(DEFAULT_HANDLER_PACKAGE_NAME)) {
-                Log.w(TAG, "Another UncaughtExceptionHandler is already installed. CrashX will preserve it and call it when needed.")
+                Log.w(TAG, "Another UncaughtExceptionHandler is already installed. XtCrash will preserve it and call it when needed.")
             }
 
-            Thread.setDefaultUncaughtExceptionHandler(CrashXUncaughtExceptionHandler(oldHandler))
+            Thread.setDefaultUncaughtExceptionHandler(XtCrashUncaughtExceptionHandler(oldHandler))
 
             if (!lifecycleCallbacksRegistered) {
                 app.registerActivityLifecycleCallbacks(createLifecycleCallbacks())
                 lifecycleCallbacksRegistered = true
             }
 
-            Log.i(TAG, "CrashX $VERSION has been installed.")
+            Log.i(TAG, "XtCrash $VERSION has been installed.")
         } catch (t: Throwable) {
-            Log.e(TAG, "An unknown error occurred while installing CrashX.", t)
+            Log.e(TAG, "An unknown error occurred while installing XtCrash.", t)
         }
     }
 
-    private class CrashXUncaughtExceptionHandler(
+    private class XtCrashUncaughtExceptionHandler(
         private val oldHandler: Thread.UncaughtExceptionHandler?
     ) : Thread.UncaughtExceptionHandler {
         override fun uncaughtException(thread: Thread, error: Throwable) {
@@ -117,7 +117,7 @@ object CrashActivity {
             return
         }
 
-        Log.e(TAG, "App crashed. CrashX is preparing the error screen.", throwable)
+        Log.e(TAG, "App crashed. XtCrash is preparing the error screen.", throwable)
 
         try {
             val app = application
@@ -127,7 +127,7 @@ object CrashActivity {
             }
 
             if (hasCrashedInTheLastSeconds(app)) {
-                Log.e(TAG, "Recent crash detected. Skipping CrashX UI to avoid a restart loop.", throwable)
+                Log.e(TAG, "Recent crash detected. Skipping XtCrash UI to avoid a restart loop.", throwable)
                 callOldHandlerOrKill(oldHandler, thread, throwable)
                 return
             }
@@ -140,7 +140,7 @@ object CrashActivity {
             }
 
             if (isStackTraceLikelyConflictive(throwable, errorActivityClass)) {
-                Log.e(TAG, "The Application class or error activity crashed. CrashX UI will not be launched.", throwable)
+                Log.e(TAG, "The Application class or error activity crashed. XtCrash UI will not be launched.", throwable)
                 callOldHandlerOrKill(oldHandler, thread, throwable)
                 return
             }
@@ -154,8 +154,8 @@ object CrashActivity {
 
             finishLastActivity()
             killCurrentProcess()
-        } catch (crashXFailure: Throwable) {
-            Log.e(TAG, "CrashX failed while handling the crash.", crashXFailure)
+        } catch (xtCrashFailure: Throwable) {
+            Log.e(TAG, "XtCrash failed while handling the crash.", xtCrashFailure)
             callOldHandlerOrKill(oldHandler, thread, throwable)
         }
     }
@@ -201,7 +201,7 @@ object CrashActivity {
             val dateFormat: DateFormat = createDateFormat()
 
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
-                if (!isCrashXErrorActivity(activity)) {
+                if (!isXtCrashErrorActivity(activity)) {
                     lastActivityCreated = WeakReference(activity)
                 }
                 appendActivityLog(dateFormat.format(Date()) + ": " + activity.javaClass.simpleName + " created\n")
@@ -235,7 +235,7 @@ object CrashActivity {
         }
     }
 
-    private fun isCrashXErrorActivity(activity: Activity): Boolean {
+    private fun isXtCrashErrorActivity(activity: Activity): Boolean {
         val configuredErrorActivity = config.errorActivityClass
         return activity.javaClass == DefaultErrorActivity::class.java
                 || (configuredErrorActivity != null && activity.javaClass == configuredErrorActivity)
@@ -262,7 +262,7 @@ object CrashActivity {
         var stackTraceString = stringWriter.toString()
 
         if (stackTraceString.length > maxSize) {
-            val disclaimer = "\n[stack trace trimmed by CrashX]"
+            val disclaimer = "\n[stack trace trimmed by XtCrash]"
             val safeLength = (maxSize - disclaimer.length).coerceAtLeast(0)
             stackTraceString = stackTraceString.substring(0, safeLength) + disclaimer
         }
@@ -347,7 +347,7 @@ object CrashActivity {
         if (crashConfig.isIncludeDeviceInfo) {
             errorDetails.append("Package: ").append(context.packageName).append("\n")
             errorDetails.append("App version: ").append(getVersionName(context)).append(" (").append(getVersionCode(context)).append(")\n")
-            errorDetails.append("CrashX version: ").append(VERSION).append("\n")
+            errorDetails.append("XtCrash version: ").append(VERSION).append("\n")
             if (crashConfig.isIncludeBuildDate) {
                 val buildDate = getBuildDateAsString(context, createDateFormat())
                 if (buildDate != null) {
@@ -473,12 +473,12 @@ object CrashActivity {
         try {
             val info = app.packageManager.getActivityInfo(ComponentName(app, errorActivityClass), 0)
             if (info.processName == mainProcessName) {
-                Log.e(TAG, "CrashX config warning: error activity " + errorActivityClass.name
+                Log.e(TAG, "XtCrash config warning: error activity " + errorActivityClass.name
                         + " runs in the main process. Add its own android:process=\"...\" attribute to the manifest entry; "
                         + "the crashing process is killed immediately after the screen launches, so an in-process screen dies before it is shown.")
             }
         } catch (e: PackageManager.NameNotFoundException) {
-            Log.e(TAG, "CrashX config warning: error activity " + errorActivityClass.name
+            Log.e(TAG, "XtCrash config warning: error activity " + errorActivityClass.name
                     + " is not declared in the merged manifest. Register an <activity> entry for it with its own android:process so the screen can launch.")
         }
     }
@@ -645,7 +645,7 @@ object CrashActivity {
         try {
             config.eventListener?.onLaunchErrorActivity()
         } catch (listenerError: Throwable) {
-            Log.e(TAG, "CrashX event listener failed on launch.", listenerError)
+            Log.e(TAG, "XtCrash event listener failed on launch.", listenerError)
         }
     }
 
@@ -653,7 +653,7 @@ object CrashActivity {
         try {
             crashConfig.eventListener?.onRestartAppFromErrorActivity()
         } catch (listenerError: Throwable) {
-            Log.e(TAG, "CrashX event listener failed on restart.", listenerError)
+            Log.e(TAG, "XtCrash event listener failed on restart.", listenerError)
         }
     }
 
@@ -661,7 +661,7 @@ object CrashActivity {
         try {
             crashConfig.eventListener?.onCloseAppFromErrorActivity()
         } catch (listenerError: Throwable) {
-            Log.e(TAG, "CrashX event listener failed on close.", listenerError)
+            Log.e(TAG, "XtCrash event listener failed on close.", listenerError)
         }
     }
 

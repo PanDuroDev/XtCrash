@@ -25,8 +25,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnNullPointerCrash: Button
     private lateinit var btnArrayCrash: Button
     private lateinit var btnCrashWithActivityLog: Button
-    private lateinit var btnDisableCrashX: Button
-    private lateinit var btnEnableCrashX: Button
+    private lateinit var btnDisableXtCrash: Button
+    private lateinit var btnEnableXtCrash: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,8 +47,8 @@ class MainActivity : AppCompatActivity() {
         btnNullPointerCrash = findViewById(R.id.btnNullPointerCrash)
         btnArrayCrash = findViewById(R.id.btnArrayCrash)
         btnCrashWithActivityLog = findViewById(R.id.btnCrashWithActivityLog)
-        btnDisableCrashX = findViewById(R.id.btnDisableCrashX)
-        btnEnableCrashX = findViewById(R.id.btnEnableCrashX)
+        btnDisableXtCrash = findViewById(R.id.btnDisableXtCrash)
+        btnEnableXtCrash = findViewById(R.id.btnEnableXtCrash)
     }
 
     private fun setClickListeners() {
@@ -57,13 +57,13 @@ class MainActivity : AppCompatActivity() {
         btnApplyCustomUiConfig.setOnClickListener { applyCustomUiConfig() }
 
         btnSimpleCrash.setOnClickListener {
-            throw RuntimeException("CrashX v7 test crash: simple RuntimeException from MainActivity")
+            throw RuntimeException("XtCrash v7 test crash: simple RuntimeException from MainActivity")
         }
 
         btnDelayedCrash.setOnClickListener {
             Toast.makeText(this, "App will crash in 3 seconds...", Toast.LENGTH_SHORT).show()
             Handler(Looper.getMainLooper()).postDelayed({
-                throw RuntimeException("CrashX v7 delayed crash test after 3 seconds")
+                throw RuntimeException("XtCrash v7 delayed crash test after 3 seconds")
             }, 3000)
         }
 
@@ -105,27 +105,27 @@ class MainActivity : AppCompatActivity() {
                     .showReportButton(true)
                     .reportButtonText("Send report")
                     .supportEmail("support@example.com")
-                    .reportSubject("CrashX sample crash report")
+                    .reportSubject("XtCrash sample crash report")
                     .additionalReportInfo("Screen: MainActivity\nMode: Activity log test")
                     .restartActivity(MainActivity::class.java)
-                    .eventListener(CrashXTestEventListener())
+                    .eventListener(XtCrashTestEventListener())
                     .apply()
 
             Toast.makeText(this, "Activity log enabled. Crashing now...", Toast.LENGTH_SHORT).show()
-            throw IllegalStateException("CrashX v7 test crash with activity lifecycle tracking enabled")
+            throw IllegalStateException("XtCrash v7 test crash with activity lifecycle tracking enabled")
         }
 
-        btnDisableCrashX.setOnClickListener {
+        btnDisableXtCrash.setOnClickListener {
             CrashConfig.Builder.create()
                     .enabled(false)
                     .apply()
-            tvCurrentMode.text = "Current mode: CrashX disabled"
-            Toast.makeText(this, "CrashX disabled. Next crash will use normal Android crash behavior.", Toast.LENGTH_LONG).show()
+            tvCurrentMode.text = "Current mode: XtCrash disabled"
+            Toast.makeText(this, "XtCrash disabled. Next crash will use normal Android crash behavior.", Toast.LENGTH_LONG).show()
         }
 
-        btnEnableCrashX.setOnClickListener {
+        btnEnableXtCrash.setOnClickListener {
             applyDefaultTestingConfig()
-            Toast.makeText(this, "CrashX enabled again.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "XtCrash enabled again.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -147,7 +147,7 @@ class MainActivity : AppCompatActivity() {
                 .showAppInfo(true)
                 .maxActivityLogEntries(50)
                 .maxStackTraceSize(128 * 1024)
-                .crashIdPrefix("CRASHX")
+                .crashIdPrefix("XTCRASH")
                 .errorTitle("Oops! The app crashed")
                 .errorMessage("Something unexpected happened. Please restart the app or send a crash report to help us fix it.")
                 .restartButtonText("Restart app")
@@ -157,7 +157,7 @@ class MainActivity : AppCompatActivity() {
                 .showReportButton(true)
                 .reportButtonText("Send crash report")
                 .supportEmail("support@example.com")
-                .reportSubject("CrashX sample crash report")
+                .reportSubject("XtCrash sample crash report")
                 .reportChooserTitle("Share crash report")
                 .additionalReportInfo("Environment: Sample app\nBuild type: Testing")
                 .backgroundColor(0xFFB91C1C.toInt())
@@ -170,7 +170,7 @@ class MainActivity : AppCompatActivity() {
                 .secondaryButtonTextColor(0xFF111827.toInt())
                 .metaTextColor(0xFF6B7280.toInt())
                 .restartActivity(MainActivity::class.java)
-                .eventListener(CrashXTestEventListener())
+                .eventListener(XtCrashTestEventListener())
                 .apply()
 
         tvCurrentMode.text = "Current mode: Default v7 testing config"
@@ -193,7 +193,7 @@ class MainActivity : AppCompatActivity() {
                 .showAppInfo(true)
                 .crashIdPrefix("DEBUG")
                 .errorTitle("Debug Crash")
-                .errorMessage("CrashX debug mode is enabled. Error details, device information, and activity logs are visible.")
+                .errorMessage("XtCrash debug mode is enabled. Error details, device information, and activity logs are visible.")
                 .restartButtonText("Restart debug app")
                 .closeButtonText("Close")
                 .detailsButtonText("Open stack trace")
@@ -208,11 +208,11 @@ class MainActivity : AppCompatActivity() {
                 .buttonTextColor(0xFFFFFFFF.toInt())
                 .secondaryButtonTextColor(0xFF111827.toInt())
                 .restartActivity(MainActivity::class.java)
-                .eventListener(CrashXTestEventListener())
+                .eventListener(XtCrashTestEventListener())
                 .apply()
 
         tvCurrentMode.text = "Current mode: Debug config"
-        Toast.makeText(this, "Debug CrashX config applied.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Debug XtCrash config applied.", Toast.LENGTH_SHORT).show()
     }
 
     private fun applyProductionConfig() {
@@ -249,11 +249,11 @@ class MainActivity : AppCompatActivity() {
                 .buttonTextColor(0xFFFFFFFF.toInt())
                 .secondaryButtonTextColor(0xFF111827.toInt())
                 .restartActivity(MainActivity::class.java)
-                .eventListener(CrashXTestEventListener())
+                .eventListener(XtCrashTestEventListener())
                 .apply()
 
         tvCurrentMode.text = "Current mode: Production config"
-        Toast.makeText(this, "Production CrashX config applied.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Production XtCrash config applied.", Toast.LENGTH_SHORT).show()
     }
 
     private fun applyCustomUiConfig() {
@@ -274,8 +274,8 @@ class MainActivity : AppCompatActivity() {
                 .crashIdPrefix("PURPLE")
                 .maxActivityLogEntries(50)
                 .maxStackTraceSize(128 * 1024)
-                .errorTitle("CrashX Protected App")
-                .errorMessage("No worries. CrashX caught the crash and gave your app a clean recovery screen.")
+                .errorTitle("XtCrash Protected App")
+                .errorMessage("No worries. XtCrash caught the crash and gave your app a clean recovery screen.")
                 .restartButtonText("Launch again")
                 .closeButtonText("Exit app")
                 .detailsButtonText("Technical info")
@@ -291,24 +291,24 @@ class MainActivity : AppCompatActivity() {
                 .secondaryButtonTextColor(0xFF111827.toInt())
                 .metaTextColor(0xFF64748B.toInt())
                 .restartActivity(MainActivity::class.java)
-                .eventListener(CrashXTestEventListener())
+                .eventListener(XtCrashTestEventListener())
                 .apply()
 
         tvCurrentMode.text = "Current mode: Custom UI config"
-        Toast.makeText(this, "Custom UI CrashX config applied.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Custom UI XtCrash config applied.", Toast.LENGTH_SHORT).show()
     }
 
-    class CrashXTestEventListener : CrashActivity.EventListener {
+    class XtCrashTestEventListener : CrashActivity.EventListener {
         override fun onLaunchErrorActivity() {
-            Log.d("CrashXSample", "CrashX error activity launched")
+            Log.d("XtCrashSample", "XtCrash error activity launched")
         }
 
         override fun onRestartAppFromErrorActivity() {
-            Log.d("CrashXSample", "App restarted from CrashX error activity")
+            Log.d("XtCrashSample", "App restarted from XtCrash error activity")
         }
 
         override fun onCloseAppFromErrorActivity() {
-            Log.d("CrashXSample", "App closed from CrashX error activity")
+            Log.d("XtCrashSample", "App closed from XtCrash error activity")
         }
     }
 }

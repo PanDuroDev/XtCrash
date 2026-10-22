@@ -26,7 +26,7 @@ import io.github.soufianodev.xtcrash.R
 import io.github.soufianodev.xtcrash.config.CrashConfig
 
 /**
- * Default CrashX error screen.
+ * Default XtCrash error screen.
  *
  * <p>Originally derived from CustomActivityOnCrash by Eduard Ereza Martínez.</p>
  * <p>Modernized and maintained as CrashX by TutorialsAndroid.</p>
@@ -95,7 +95,7 @@ class DefaultErrorActivity : AppCompatActivity() {
             crashIdView.setTextColor(config.metaTextColor)
             if (config.isShowCrashId) {
                 crashIdView.visibility = View.VISIBLE
-                crashIdView.text = getString(R.string.crashx_crash_id_format, CrashActivity.getCrashIdFromIntent(intent))
+                crashIdView.text = getString(R.string.xtcrash_crash_id_format, CrashActivity.getCrashIdFromIntent(intent))
             } else {
                 crashIdView.visibility = View.GONE
             }
@@ -105,7 +105,7 @@ class DefaultErrorActivity : AppCompatActivity() {
             appInfoView.setTextColor(config.metaTextColor)
             if (config.isShowAppInfo) {
                 appInfoView.visibility = View.VISIBLE
-                appInfoView.text = getString(R.string.crashx_version_format, CrashActivity.VERSION)
+                appInfoView.text = getString(R.string.xtcrash_version_format, CrashActivity.VERSION)
             } else {
                 appInfoView.visibility = View.GONE
             }
@@ -253,7 +253,7 @@ class DefaultErrorActivity : AppCompatActivity() {
     private fun shareCrashReport() {
         val errorInformation = CrashActivity.getAllErrorDetailsFromIntent(this@DefaultErrorActivity, intent)
         val subject = config.reportSubject
-                ?: getString(R.string.crashx_default_report_subject, packageName, CrashActivity.getCrashIdFromIntent(intent))
+                ?: getString(R.string.xtcrash_default_report_subject, packageName, CrashActivity.getCrashIdFromIntent(intent))
         val chooserTitle = config.reportChooserTitle
                 ?: requireNotNull(config.reportButtonText)
 
@@ -271,7 +271,7 @@ class DefaultErrorActivity : AppCompatActivity() {
             startActivity(Intent.createChooser(sendIntent, chooserTitle))
         } catch (e: ActivityNotFoundException) {
             copyErrorToClipboard()
-            Toast.makeText(this, R.string.crashx_no_share_app_found, Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.xtcrash_no_share_app_found, Toast.LENGTH_SHORT).show()
         }
     }
 }

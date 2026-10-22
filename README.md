@@ -145,7 +145,7 @@ Core options and their defaults as defined in `CrashConfig`:
 | `errorMessage` | String | `"The app ran into an unexpected problem. You can restart the app or send a crash report."` | Screen message |
 | `showReportButton` | Boolean | `false` | Report/share button; combine with `supportEmail()` |
 | `showCrashId` | Boolean | `true` | Displays the generated crash ID on the screen |
-| `crashIdPrefix` | String | `"CRASHX"` | Prefix for generated crash IDs |
+| `crashIdPrefix` | String | `"XTCRASH"` | Prefix for generated crash IDs |
 
 Advanced options, all set through the same builder: custom labels for every button (`restartButtonText()`, `closeButtonText()`, `detailsButtonText()`, `reportButtonText()`, `copyButtonText()`), nine theme colors (`backgroundColor()`, `cardBackgroundColor()`, `primaryButtonColor()`, `secondaryButtonColor()`, `titleTextColor()`, `messageTextColor()`, `buttonTextColor()`, `secondaryButtonTextColor()`, `metaTextColor()`), a custom error icon (`errorDrawable()`), a custom restart target (`restartActivity()`), report metadata toggles (`includeDeviceInfo()`, `includeActivityLog()`, `includeStackTrace()`, `includeBuildDate()`, `includeCrashId()`), report size limits (`maxStackTraceSize()`, default `131071`, and `maxActivityLogEntries()`, default `50`), and extra report text (`additionalReportInfo()`).
 
@@ -317,7 +317,7 @@ library/src/main/java/io/github/soufianodev/xtcrash/
 └── provider/CrashInitProvider.kt      manifest-declared provider, installs the handler at startup
 ```
 
-Flow: the provider installs an uncaught-exception handler, preserving any previously installed one (initialize XtCrash first, then Firebase Crashlytics, ACRA, or another handler, so the chain stays intact). A crash builds the serializable payload, then either launches the error activity or delegates by `backgroundMode`. The error activity runs in a dedicated `:error_activity` process and survives the main process dying. `minTimeBetweenCrashesMs` prevents restart loops.
+Flow: the provider installs an uncaught-exception handler, preserving any previously installed one (initialize XtCrash first, then Firebase Crashlytics, ACRA, or another handler, so the chain stays intact). A crash builds the serializable payload, then either launches the error activity or delegates by `backgroundMode`. The error activity runs in a dedicated `:xtcrash_error` process and survives the main process dying. `minTimeBetweenCrashesMs` prevents restart loops.
 
 ## Attribution
 
