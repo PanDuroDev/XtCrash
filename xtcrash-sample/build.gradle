@@ -38,5 +38,5 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.1'
 	
 	//CrashX library
-    implementation project(":xtcrash")
+    implementation project(":library")
 }

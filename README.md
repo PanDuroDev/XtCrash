@@ -75,10 +75,10 @@ dependencies {
 ```bash
 git clone https://github.com/SoufianoDev/XtCrash.git
 cd XtCrash
-./gradlew :xtcrash:assembleRelease
+./gradlew :library:assembleRelease
 ```
 
-The AAR is written to `xtcrash/build/outputs/aar/`.
+The AAR is written to `library/build/outputs/aar/`.
 
 ## Quick Start
 
@@ -303,14 +303,14 @@ The listener is serialized with the crash config, so anonymous and non-static in
 
 ## R8 Minification
 
-The AAR ships `xtcrash/consumer-rules.pro`, so consuming apps get the keep rules automatically. No app-side configuration is needed for standard usage.
+The AAR ships `library/consumer-rules.pro`, so consuming apps get the keep rules automatically. No app-side configuration is needed for standard usage.
 
 Custom features are serialized through intents (config, event listener). If your app runs aggressive shrinking and you use a custom error activity or event listener, keep those classes in your own rules as well.
 
 ## Architecture
 
 ```
-xtcrash/src/main/java/io/github/soufianodev/xtcrash/
+library/src/main/java/io/github/soufianodev/xtcrash/
 ├── CrashActivity.kt              core: install(), config holder, intent helpers, statics
 ├── config/CrashConfig.kt         serializable config + fluent builder
 ├── activity/DefaultErrorActivity.kt   the default crash screen UI

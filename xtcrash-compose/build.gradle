@@ -55,7 +55,7 @@ android {
 }
 
 dependencies {
-    api project(':xtcrash')
+    api project(':library')
 
     implementation platform('androidx.compose:compose-bom:2024.09.03')
     implementation 'androidx.compose.material3:material3'

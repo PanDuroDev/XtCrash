@@ -2,4 +2,4 @@ jdk:
   - openjdk21
 
 install:
-  - ./gradlew clean :xtcrash:publishToMavenLocal -x test
+  - ./gradlew clean :library:publishToMavenLocal -x test
