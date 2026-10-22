@@ -1,0 +1,16 @@
+build
+*/build
+*/*.iml
+*.iml
+local.properties
+.idea
+.idea/**
+.gradle
+*.hprof
+create-central-bundle.ps1
+library/build/
+sample/build/
+HowToPublish.txt
+
+# Kotlin 2.x incremental session data
+.kotlin/

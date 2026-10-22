@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.developer.crashx">
+
+    <application>
+        <provider
+            android:name="com.developer.crashx.provider.CrashInitProvider"
+            android:authorities="${applicationId}.crashx-init-provider"
+            android:exported="false"
+            android:initOrder="101" />
+
+        <activity
+            android:name="com.developer.crashx.activity.DefaultErrorActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:finishOnTaskLaunch="true"
+            android:launchMode="singleTask"
+            android:process=":crashx_error"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+    </application>
+
+</manifest>
