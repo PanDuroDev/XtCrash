@@ -1,5 +1,9 @@
 ## [1.0.0] - 2026-10-22
 
+### Added
+
+- Optional Jetpack Compose artifact (`:compose`, resolving as `com.github.SoufianoDev.XtCrash:compose`) with `XtCrashErrorScreen`, a composable crash screen that mirrors the default one.
+
 ### Changed
 
 - Migrated library and sample sources from Java to Kotlin.

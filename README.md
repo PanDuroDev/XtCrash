@@ -21,6 +21,7 @@ XtCrash is built on top of [CrashX](https://github.com/TutorialsAndroid/crashx),
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [Custom Error Screen](#custom-error-screen)
+- [Jetpack Compose](#jetpack-compose)
 - [Crash Reports](#crash-reports)
 - [Event Listener](#event-listener)
 - [R8 Minification](#r8-minification)
@@ -183,6 +184,38 @@ Static helpers on `CrashActivity` unpack the crash payload from the intent:
 | `CrashActivity.restartApplication(Context, CrashConfig)` | Restart the app |
 | `CrashActivity.restartApplicationWithIntent(Context, Intent, CrashConfig)` | Restart to a specific target |
 | `CrashActivity.closeApplication(Context, CrashConfig)` | Exit the app |
+
+## Jetpack Compose
+
+Compose apps are supported out of the box: install, crash catching, tracking and the default screen work unchanged, and the core library carries no Compose dependency.
+
+For a crash screen rendered in Compose, the optional `:compose` artifact provides `XtCrashErrorScreen`, a composable that mirrors the default screen. It is driven entirely by `CrashConfig` — colors, labels, crash ID, the error details dialog, copy to clipboard and report sharing behave exactly like the XML screen — and it reuses the core string resources, so translations apply.
+
+```kotlin
+dependencies {
+    implementation("com.github.SoufianoDev.XtCrash:compose:1.0.0") // resolves with the same tag as the core
+}
+```
+
+Point `errorActivity()` at your own `ComponentActivity`, then render the screen from the crash intent:
+
+```kotlin
+class ComposeCrashActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val config = CrashActivity.getConfigFromIntent(intent) ?: run { finish(); return }
+        setContent {
+            XtCrashErrorScreen(
+                config = config,
+                errorDetails = CrashActivity.getAllErrorDetailsFromIntent(this, intent),
+                crashId = CrashActivity.getCrashIdFromIntent(intent) ?: "",
+            )
+        }
+    }
+}
+```
+
+Restart and close buttons call `CrashActivity.restartApplication(...)` and `closeApplication(...)` internally; you only need the screen in `setContent`.
 
 ## Crash Reports
 
