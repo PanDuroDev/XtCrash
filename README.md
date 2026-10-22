@@ -217,6 +217,31 @@ class ComposeCrashActivity : ComponentActivity() {
 
 Restart and close buttons call `CrashActivity.restartApplication(...)` and `closeApplication(...)` internally; you only need the screen in `setContent`.
 
+### Build your own screen
+
+`XtCrashErrorScreen` mirrors the default look. For a fully custom design, skip it and render any composable from the crash activity — the screen is an ordinary `ComponentActivity`:
+
+```kotlin
+class ComposeCrashActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val config = CrashActivity.getConfigFromIntent(intent) ?: run { finish(); return }
+        setContent { MyAppCrashScreen(config) }
+    }
+}
+
+@Composable
+fun MyAppCrashScreen(config: CrashConfig) {
+    val activity = LocalContext.current as? Activity ?: return
+    // Your UI, your styling — config colors and labels are optional. Restart and close
+    // stay library calls so the config's restart intent and close policy are applied:
+    Column {
+        Button(onClick = { CrashActivity.restartApplication(activity, config) }) { Text("Restart") }
+        Button(onClick = { CrashActivity.closeApplication(activity, config) }) { Text("Close") }
+    }
+}
+```
+
 ## Crash Reports
 
 When `showReportButton(true)` is applied, the screen shows a share action. With `supportEmail()` set, the share intent is prepared as an email using `reportSubject()` and `reportChooserTitle()`; without one, the share sheet offers all available targets. Attach extra context with `additionalReportInfo()`.
