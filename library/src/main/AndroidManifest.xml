@@ -1,16 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.developer.crashx">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application>
         <provider
-            android:name="com.developer.crashx.provider.CrashInitProvider"
-            android:authorities="${applicationId}.crashx-init-provider"
+            android:name="io.github.soufianodev.xtcrash.provider.CrashInitProvider"
+            android:authorities="${applicationId}.xtcrash-init-provider"
             android:exported="false"
             android:initOrder="101" />
 
         <activity
-            android:name="com.developer.crashx.activity.DefaultErrorActivity"
+            android:name="io.github.soufianodev.xtcrash.activity.DefaultErrorActivity"
             android:excludeFromRecents="true"
             android:exported="false"
             android:finishOnTaskLaunch="true"

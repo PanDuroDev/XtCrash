@@ -1,11 +1,11 @@
-package com.developer.crashx.provider
+package io.github.soufianodev.xtcrash.provider
 
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
 
-import com.developer.crashx.CrashActivity
+import io.github.soufianodev.xtcrash.CrashActivity
 
 /**
  * Auto-initializes CrashX through Android's ContentProvider startup mechanism.

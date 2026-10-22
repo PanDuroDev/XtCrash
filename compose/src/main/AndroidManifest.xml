@@ -3,7 +3,7 @@
 
     <application>
         <activity
-            android:name="com.developer.crashx.compose.ComposeErrorActivity"
+            android:name="io.github.soufianodev.xtcrash.compose.ComposeErrorActivity"
             android:excludeFromRecents="true"
             android:exported="false"
             android:finishOnTaskLaunch="true"

@@ -1,4 +1,4 @@
-package com.developer.crashx
+package io.github.soufianodev.xtcrash
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -14,8 +14,8 @@ import android.util.Log
 
 import androidx.annotation.RestrictTo
 
-import com.developer.crashx.activity.DefaultErrorActivity
-import com.developer.crashx.config.CrashConfig
+import io.github.soufianodev.xtcrash.activity.DefaultErrorActivity
+import io.github.soufianodev.xtcrash.config.CrashConfig
 
 import java.io.PrintWriter
 import java.io.Serializable
@@ -42,17 +42,17 @@ object CrashActivity {
 
     private const val TAG = "CrashX"
 
-    private const val EXTRA_CONFIG = "com.developer.crashx.EXTRA_CONFIG"
-    private const val EXTRA_STACK_TRACE = "com.developer.crashx.EXTRA_STACK_TRACE"
-    private const val EXTRA_ACTIVITY_LOG = "com.developer.crashx.EXTRA_ACTIVITY_LOG"
-    private const val EXTRA_THREAD_NAME = "com.developer.crashx.EXTRA_THREAD_NAME"
-    private const val EXTRA_CRASH_ID = "com.developer.crashx.EXTRA_CRASH_ID"
-    private const val EXTRA_THROWABLE_CLASS = "com.developer.crashx.EXTRA_THROWABLE_CLASS"
-    private const val EXTRA_THROWABLE_MESSAGE = "com.developer.crashx.EXTRA_THROWABLE_MESSAGE"
-    private const val EXTRA_CRASH_DATE = "com.developer.crashx.EXTRA_CRASH_DATE"
+    private const val EXTRA_CONFIG = "io.github.soufianodev.xtcrash.EXTRA_CONFIG"
+    private const val EXTRA_STACK_TRACE = "io.github.soufianodev.xtcrash.EXTRA_STACK_TRACE"
+    private const val EXTRA_ACTIVITY_LOG = "io.github.soufianodev.xtcrash.EXTRA_ACTIVITY_LOG"
+    private const val EXTRA_THREAD_NAME = "io.github.soufianodev.xtcrash.EXTRA_THREAD_NAME"
+    private const val EXTRA_CRASH_ID = "io.github.soufianodev.xtcrash.EXTRA_CRASH_ID"
+    private const val EXTRA_THROWABLE_CLASS = "io.github.soufianodev.xtcrash.EXTRA_THROWABLE_CLASS"
+    private const val EXTRA_THROWABLE_MESSAGE = "io.github.soufianodev.xtcrash.EXTRA_THROWABLE_MESSAGE"
+    private const val EXTRA_CRASH_DATE = "io.github.soufianodev.xtcrash.EXTRA_CRASH_DATE"
 
-    private const val INTENT_ACTION_ERROR_ACTIVITY = "com.developer.crashx.ERROR"
-    private const val INTENT_ACTION_RESTART_ACTIVITY = "com.developer.crashx.RESTART"
+    private const val INTENT_ACTION_ERROR_ACTIVITY = "io.github.soufianodev.xtcrash.ERROR"
+    private const val INTENT_ACTION_RESTART_ACTIVITY = "io.github.soufianodev.xtcrash.RESTART"
     private const val DEFAULT_HANDLER_PACKAGE_NAME = "com.android.internal.os"
 
     private const val SHARED_PREFERENCES_FILE = "crashx"

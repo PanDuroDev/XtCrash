@@ -1,4 +1,4 @@
-package com.developer.crashx.crash.activity
+package io.github.soufianodev.xtcrash.sample.activity
 
 import android.os.Bundle
 import android.os.Handler
@@ -10,9 +10,9 @@ import android.widget.Toast
 
 import androidx.appcompat.app.AppCompatActivity
 
-import com.developer.crashx.CrashActivity
-import com.developer.crashx.config.CrashConfig
-import com.developer.crashx.crash.R
+import io.github.soufianodev.xtcrash.CrashActivity
+import io.github.soufianodev.xtcrash.config.CrashConfig
+import io.github.soufianodev.xtcrash.sample.R
 
 class MainActivity : AppCompatActivity() {
 

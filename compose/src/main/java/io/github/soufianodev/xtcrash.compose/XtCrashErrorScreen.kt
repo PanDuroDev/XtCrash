@@ -1,4 +1,4 @@
-package com.developer.crashx.compose
+package io.github.soufianodev.xtcrash.compose
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
@@ -48,9 +48,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-import com.developer.crashx.CrashActivity
-import com.developer.crashx.R
-import com.developer.crashx.config.CrashConfig
+import io.github.soufianodev.xtcrash.CrashActivity
+import io.github.soufianodev.xtcrash.R
+import io.github.soufianodev.xtcrash.config.CrashConfig
 
 /**
  * Jetpack Compose crash screen for XtCrash.

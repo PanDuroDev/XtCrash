@@ -9,7 +9,8 @@
 ### Changed
 
 - Migrated library and sample sources from Java to Kotlin.
-- The project was renamed to **XtCrash** (previously CrashX); package names (`com.developer.crashx.*`) and stored preferences are unchanged.
+- The project was renamed to **XtCrash** (previously CrashX); stored preferences, resource names and log identity are unchanged.
+- **Breaking:** new, professional package names following reverse-domain-device conventions — the core library and its sub-packages are now `io.github.soufianodev.xtcrash.*` (`config`, `activity`, `provider`), the Compose artifact is `io.github.soufianodev.xtcrash.compose`, and the sample app is `io.github.soufianodev.xtcrash.sample`. Intent payload keys and the init-provider authority (now `xtcrash-init-provider`) follow the new package. Update imports and, for custom crash activities, the manifest class references. The `crash_`/`customactivityoncrash_*` resource names and the `crashx` preferences file are unchanged, and JitPack coordinates are unaffected (Java packages and Maven groups are independent). No release tag has been published yet, so nothing ships under the previous packages.
 - The public API is unchanged; Java consumers compile against the same classes, getters and builder methods as before.
 - AGP 9 built-in Kotlin support compiles the new sources, no extra Kotlin plugin or version pinning added.
 

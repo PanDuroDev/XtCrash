@@ -1,4 +1,4 @@
-package com.developer.crashx.config
+package io.github.soufianodev.xtcrash.config
 
 import android.app.Activity
 
@@ -6,7 +6,7 @@ import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.annotation.IntDef
 
-import com.developer.crashx.CrashActivity
+import io.github.soufianodev.xtcrash.CrashActivity
 
 import java.io.Serializable
 import java.lang.reflect.Modifier

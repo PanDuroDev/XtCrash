@@ -1,4 +1,4 @@
-package com.developer.crashx.activity
+package io.github.soufianodev.xtcrash.activity
 
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
@@ -21,9 +21,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.content.res.ResourcesCompat
 
-import com.developer.crashx.CrashActivity
-import com.developer.crashx.R
-import com.developer.crashx.config.CrashConfig
+import io.github.soufianodev.xtcrash.CrashActivity
+import io.github.soufianodev.xtcrash.R
+import io.github.soufianodev.xtcrash.config.CrashConfig
 
 /**
  * Default CrashX error screen.

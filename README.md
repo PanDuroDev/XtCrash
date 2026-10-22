@@ -119,7 +119,7 @@ public class MyApplication extends Application {
 }
 ```
 
-Imports: `com.developer.crashx.CrashActivity` and `com.developer.crashx.config.CrashConfig`.
+Imports: `io.github.soufianodev.xtcrash.CrashActivity` and `io.github.soufianodev.xtcrash.config.CrashConfig`.
 
 Force a crash to see the error screen:
 
@@ -310,7 +310,7 @@ Custom features are serialized through intents (config, event listener). If your
 ## Architecture
 
 ```
-library/src/main/java/com/developer/crashx/
+library/src/main/java/io/github/soufianodev/xtcrash/
 ├── CrashActivity.kt              core: install(), config holder, intent helpers, statics
 ├── config/CrashConfig.kt         serializable config + fluent builder
 ├── activity/DefaultErrorActivity.kt   the default crash screen UI

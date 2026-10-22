@@ -20,7 +20,7 @@ ext {
 }
 
 android {
-    namespace 'com.developer.crashx.compose'
+    namespace 'io.github.soufianodev.xtcrash.compose'
     compileSdk 37
 
     defaultConfig {

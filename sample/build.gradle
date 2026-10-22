@@ -1,11 +1,11 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace 'com.developer.crashx.crash'
+    namespace 'io.github.soufianodev.xtcrash.sample'
     compileSdk 37
 
     defaultConfig {
-        applicationId "com.developer.crashx.crash"
+        applicationId "io.github.soufianodev.xtcrash.sample"
         minSdkVersion 23
         targetSdkVersion 37
         versionCode 11
