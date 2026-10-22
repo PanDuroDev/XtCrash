@@ -3,6 +3,7 @@ package com.developer.crashx
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -455,6 +456,31 @@ object CrashActivity {
     @RestrictTo(RestrictTo.Scope.LIBRARY)
     fun setConfig(crashConfig: CrashConfig) {
         config = crashConfig
+        val app = application
+        val errorActivityClass = crashConfig.errorActivityClass
+        if (app != null && errorActivityClass != null && errorActivityClass != DefaultErrorActivity::class.java) {
+            validateCustomErrorActivity(app, errorActivityClass)
+        }
+    }
+
+    /**
+     * Flags custom error activities that cannot work: absent from the manifest, or running
+     * in the main process (the crashing process is killed right after the screen launches).
+     * Warnings only — throwing here during provider init would break app startup.
+     */
+    private fun validateCustomErrorActivity(app: Application, errorActivityClass: Class<out Activity>) {
+        val mainProcessName = app.applicationInfo.processName ?: app.packageName
+        try {
+            val info = app.packageManager.getActivityInfo(ComponentName(app, errorActivityClass), 0)
+            if (info.processName == mainProcessName) {
+                Log.e(TAG, "CrashX config warning: error activity " + errorActivityClass.name
+                        + " runs in the main process. Add its own android:process=\"...\" attribute to the manifest entry; "
+                        + "the crashing process is killed immediately after the screen launches, so an in-process screen dies before it is shown.")
+            }
+        } catch (e: PackageManager.NameNotFoundException) {
+            Log.e(TAG, "CrashX config warning: error activity " + errorActivityClass.name
+                    + " is not declared in the merged manifest. Register an <activity> entry for it with its own android:process so the screen can launch.")
+        }
     }
 
     private fun isStackTraceLikelyConflictive(throwable: Throwable,
