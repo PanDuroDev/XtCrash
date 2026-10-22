@@ -185,17 +185,62 @@ Static helpers on `CrashActivity` unpack the crash payload from the intent:
 | `CrashActivity.restartApplicationWithIntent(Context, Intent, CrashConfig)` | Restart to a specific target |
 | `CrashActivity.closeApplication(Context, CrashConfig)` | Exit the app |
 
+### Any project setup
+
+The custom screen needs only three things: the manifest entry above, one `errorActivity(...)` line, and your own activity — whatever the stack. Every `CrashActivity` intent helper and the whole `CrashConfig` builder are static and Java-callable, so no Kotlin is required in the consumer, and the manifest entry doesn't get any code either — it is plain XML.
+
+| Project setup | Custom error screen |
+|---|---|
+| Java + XML | Java activity, your XML layout (snippet below) |
+| Kotlin + XML | Same, written in Kotlin |
+| Java + Kotlin + XML | Same; plain setup, no extra wiring |
+| Java + Kotlin + Compose + XML | Drop-in `ComposeErrorActivity` (see Jetpack Compose), or your own Compose activity |
+| Java + Compose | Drop-in `ComposeErrorActivity` from Java; a fully custom Compose design needs one Kotlin file (Compose is Kotlin-only) |
+
+Custom screen from pure Java + XML:
+
+```java
+public class MyErrorActivity extends Activity {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        CrashConfig config = CrashActivity.getConfigFromIntent(getIntent());
+        String errorDetails = CrashActivity.getAllErrorDetailsFromIntent(this, getIntent());
+
+        setContentView(R.layout.my_error_screen); // your XML, your design
+        // Bind any action to the library helpers:
+        // CrashActivity.restartApplication(this, config);
+        // CrashActivity.closeApplication(this, config);
+    }
+}
+```
+
+Misconfigurations are flagged at configure time: when the configured activity is missing from the merged manifest, or lacks its own `android:process`, the library logs a warning when the config is applied instead of failing silently during a crash.
+
 ## Jetpack Compose
 
 Compose apps are supported out of the box: install, crash catching, tracking and the default screen work unchanged, and the core library carries no Compose dependency.
 
-For a crash screen rendered in Compose, the optional `:compose` artifact provides `XtCrashErrorScreen`, a composable that mirrors the default screen. It is driven entirely by `CrashConfig` — colors, labels, crash ID, the error details dialog, copy to clipboard and report sharing behave exactly like the XML screen — and it reuses the core string resources, so translations apply.
+For a crash screen rendered in Compose, the optional `:compose` artifact provides two levels of use:
+
+**Drop-in (no code beyond one config line).** The artifact ships `ComposeErrorActivity`, a hosted crash activity in its own dedicated process, ready for any project:
 
 ```kotlin
 dependencies {
     implementation("com.github.SoufianoDev.XtCrash:compose:1.0.0") // resolves with the same tag as the core
 }
 ```
+
+```kotlin
+CrashConfig.Builder.create()
+    .errorActivity(ComposeErrorActivity::class.java)
+    .apply()
+```
+
+No manifest entry and no crash-activity code needed — the declaration ships inside the artifact and merges into your manifest.
+
+**Config-driven composable.** `XtCrashErrorScreen` mirrors the default screen. It is driven entirely by `CrashConfig` — colors, labels, crash ID, the error details dialog, copy to clipboard and report sharing behave exactly like the XML screen — and it reuses the core string resources, so translations apply.
 
 Point `errorActivity()` at your own `ComponentActivity`, then render the screen from the crash intent:
 

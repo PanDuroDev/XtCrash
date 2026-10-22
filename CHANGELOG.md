@@ -3,6 +3,8 @@
 ### Added
 
 - Optional Jetpack Compose artifact (`:compose`, resolving as `com.github.SoufianoDev.XtCrash:compose`) with `XtCrashErrorScreen`, a composable crash screen that mirrors the default one.
+- `ComposeErrorActivity` in the `:compose` artifact: a hosted, manifest-declared Compose error screen enabled with one config line (`errorActivity(ComposeErrorActivity::class.java)`), no consumer-side crash activity or manifest entry needed.
+- Configure-time validation of custom error activities: when the configured activity is missing from the merged manifest or lacks its own `android:process`, the library logs a warning when the config is applied, instead of failing silently at crash time. All flavors (Java/Kotlin, XML/Compose) benefit.
 
 ### Changed
 
