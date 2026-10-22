@@ -39,7 +39,7 @@ XtCrash is built on top of [CrashX](https://github.com/TutorialsAndroid/crashx),
 
 ### JitPack
 
-Resolve coordinates `com.github.SoufianoDev:XtCrash:v1.0.0`. JitPack builds this once the `v1.0.0` tag exists on the repository; no tag has been published yet, so treat the coordinates as ready once tagging happens.
+Resolve coordinates `com.github.SoufianoDev.XtCrash:xtcrash:v1.0.0`. JitPack builds this once the `v1.0.0` tag exists on the repository; no tag has been published yet, so treat the coordinates as ready once tagging happens. Sub-module artifacts follow each module's publish metadata (`xtcrash`, `xtcrash-compose`), independent of directory names.
 
 Add the repository in your root `settings.gradle.kts`:
 
@@ -58,7 +58,7 @@ Add the dependency in your app module:
 
 ```kotlin
 dependencies {
-    implementation("com.github.SoufianoDev:XtCrash:v1.0.0")
+    implementation("com.github.SoufianoDev.XtCrash:xtcrash:v1.0.0")
 }
 ```
 
@@ -66,7 +66,7 @@ Groovy DSL equivalent:
 
 ```gradle
 dependencies {
-    implementation 'com.github.SoufianoDev:XtCrash:v1.0.0'
+    implementation 'com.github.SoufianoDev.XtCrash:xtcrash:v1.0.0'
 }
 ```
 
@@ -75,10 +75,10 @@ dependencies {
 ```bash
 git clone https://github.com/SoufianoDev/XtCrash.git
 cd XtCrash
-./gradlew :library:assembleRelease
+./gradlew :xtcrash:assembleRelease
 ```
 
-The AAR is written to `library/build/outputs/aar/`.
+The AAR is written to `xtcrash/build/outputs/aar/`.
 
 ## Quick Start
 
@@ -222,13 +222,13 @@ Misconfigurations are flagged at configure time: when the configured activity is
 
 Compose apps are supported out of the box: install, crash catching, tracking and the default screen work unchanged, and the core library carries no Compose dependency.
 
-For a crash screen rendered in Compose, the optional `:compose` artifact provides two levels of use:
+For a crash screen rendered in Compose, the optional `xtcrash-compose` artifact provides two levels of use:
 
 **Drop-in (no code beyond one config line).** The artifact ships `ComposeErrorActivity`, a hosted crash activity in its own dedicated process, ready for any project:
 
 ```kotlin
 dependencies {
-    implementation("com.github.SoufianoDev.XtCrash:compose:1.0.0") // resolves with the same tag as the core
+    implementation("com.github.SoufianoDev.XtCrash:xtcrash-compose:1.0.0") // resolves with the same tag as the core
 }
 ```
 
@@ -303,14 +303,14 @@ The listener is serialized with the crash config, so anonymous and non-static in
 
 ## R8 Minification
 
-The AAR ships `library/consumer-rules.pro`, so consuming apps get the keep rules automatically. No app-side configuration is needed for standard usage.
+The AAR ships `xtcrash/consumer-rules.pro`, so consuming apps get the keep rules automatically. No app-side configuration is needed for standard usage.
 
 Custom features are serialized through intents (config, event listener). If your app runs aggressive shrinking and you use a custom error activity or event listener, keep those classes in your own rules as well.
 
 ## Architecture
 
 ```
-library/src/main/java/io/github/soufianodev/xtcrash/
+xtcrash/src/main/java/io/github/soufianodev/xtcrash/
 ├── CrashActivity.kt              core: install(), config holder, intent helpers, statics
 ├── config/CrashConfig.kt         serializable config + fluent builder
 ├── activity/DefaultErrorActivity.kt   the default crash screen UI
