@@ -3,10 +3,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/SoufianoDev/XtCrash/blob/master/LICENSE"><img src="https://img.shields.io/github/license/SoufianoDev/XtCrash?style=for-the-badge&label=License" alt="License" /></a>
-  <a href="https://jitpack.io/#SoufianoDev/XtCrash"><img src="https://jitpack.io/v/SoufianoDev/XtCrash.svg?style=for-the-badge&logo=jitpack" alt="JitPack" /></a>
-  <img src="https://img.shields.io/github/languages/top/SoufianoDev/XtCrash?style=for-the-badge&logo=kotlin" alt="Kotlin" />
-  <img src="https://img.shields.io/badge/API-23%2B-8B5CF6?style=for-the-badge&logo=android" alt="Minimum API 23" />
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/SoufianoDev/XtCrash?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1526" alt="License: Apache-2.0" /></a>
+  <a href="https://jitpack.io/#SoufianoDev/XtCrash"><img src="https://img.shields.io/github/v/tag/SoufianoDev/XtCrash?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1526" alt="Latest version tag" /></a>
+  <img src="https://img.shields.io/github/languages/top/SoufianoDev/XtCrash?style=for-the-badge&logo=kotlin&logoColor=white&labelColor=0D1526" alt="Language: Kotlin" />
+  <img src="https://img.shields.io/badge/API-23%2B-8B5CF6?style=for-the-badge&logo=android&logoColor=white&labelColor=0D1526" alt="Minimum API 23" />
+  <img src="https://img.shields.io/github/last-commit/SoufianoDev/XtCrash/master?style=for-the-badge&logo=github&logoColor=white&labelColor=0D1526" alt="Last commit" />
 </p>
 
 An Android library that replaces the default crash dialog with a configurable error screen: restart, close, technical details, copy to clipboard, crash report sharing, and per-crash IDs. The sources are Kotlin; the public API is Java-callable without changes.
