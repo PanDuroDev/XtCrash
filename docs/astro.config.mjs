@@ -21,7 +21,6 @@ export default defineConfig({
             'configuration',
             'custom-error-screen',
             'compose',
-            'material-3-theming',
           ],
         },
       ],

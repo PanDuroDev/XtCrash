@@ -325,7 +325,6 @@ The Markdown sources live in `docs/src/content/docs/`.
 | [Configuration](https://soufianodev.github.io/XtCrash/configuration/) | Complete `CrashConfig` reference |
 | [Custom Error Screen](https://soufianodev.github.io/XtCrash/custom-error-screen/) | Subclass, manifest entry, intent helpers |
 | [Compose](https://soufianodev.github.io/XtCrash/compose/) | Drop-in activity, composable screen, custom designs |
-| [Material 3 Theming](https://soufianodev.github.io/XtCrash/material-3-theming/) | Config colors mapped to M3 color roles |
 
 ## Architecture
 
