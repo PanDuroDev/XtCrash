@@ -315,7 +315,7 @@ The library is silent by default and owns nothing beyond its own messages; where
 
 - `loggingEnabled(true)` restores the previous logcat output (tag `XtCrash`, `Log.i`/`Log.w`/`Log.e`) for install and crash events.
 - `logListener(...)` receives the same events with the standard `android.util.Log` priorities so they can enter your own framework, such as a file-based logger or `XtLogger`-style pipeline. The library only forwards; it never formats or stores them.
-- Both sinks can be combined. `logErrorOnRestart` stays the gate for the restart-time stack trace.
+- Both sinks can be combined. `logErrorOnRestart` stays the gate for the restart-time stack trace. The sample app wires both together: `DemoCrashLogListener` in `xtcrash-sample` forwards every event under the `XtCrashDemo` tag with the delivering process's PID, making the cross-process delivery visible in logcat.
 
 ```kotlin
 CrashConfig.Builder.create()

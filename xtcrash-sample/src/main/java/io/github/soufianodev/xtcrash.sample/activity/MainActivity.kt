@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 
 import io.github.soufianodev.xtcrash.CrashActivity
 import io.github.soufianodev.xtcrash.config.CrashConfig
+import io.github.soufianodev.xtcrash.sample.DemoCrashLogListener
 import io.github.soufianodev.xtcrash.sample.R
 
 class MainActivity : AppCompatActivity() {
@@ -132,6 +133,12 @@ class MainActivity : AppCompatActivity() {
     private fun applyDefaultTestingConfig() {
         CrashConfig.Builder.create()
                 .enabled(true)
+                // Demo of both logging sinks for the on-device cross-process
+                // check: logcat output plus DemoCrashLogListener forwarding
+                // under the XtCrashDemo tag with the delivering pid. Other
+                // config modes inherit these through the live-config copy.
+                .loggingEnabled(true)
+                .logListener(DemoCrashLogListener())
                 .backgroundMode(CrashConfig.BACKGROUND_MODE_SHOW_CUSTOM)
                 .showErrorDetails(true)
                 .showRestartButton(true)
