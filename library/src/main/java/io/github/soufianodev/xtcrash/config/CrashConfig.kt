@@ -246,11 +246,14 @@ class CrashConfig : Serializable {
              * declared non-static, non-transient fields must have serializable
              * types. This catches the common failures at configure time; it cannot
              * prove everything, e.g. a field declared as Any/Object or as an
-             * interface can still hold non-serializable runtime state.
+             * interface can still hold non-serializable runtime state. Only
+             * serializable superclasses are walked: a non-serializable ancestor's
+             * fields are initialized by its no-argument constructor instead of the
+             * stream.
              */
             private fun checkListenerFields(listenerName: String, listener: Serializable) {
                 var clazz: Class<*> = listener.javaClass
-                while (clazz != Any::class.java) {
+                while (true) {
                     for (field in clazz.declaredFields) {
                         if (Modifier.isStatic(field.modifiers)
                                 || Modifier.isTransient(field.modifiers)
@@ -263,7 +266,14 @@ class CrashConfig : Serializable {
                                             + field.type.name + ") is not java.io.Serializable, but the listener is carried inside the serialized crash config. Make the field Serializable, mark it transient, or remove it.")
                         }
                     }
-                    clazz = clazz.superclass ?: break
+                    val superclass = clazz.superclass ?: break
+                    if (!Serializable::class.java.isAssignableFrom(superclass)) {
+                        // A non-serializable ancestor's state is not written to the
+                        // stream; deserialization initializes it through the
+                        // ancestor's no-argument constructor.
+                        break
+                    }
+                    clazz = superclass
                 }
             }
 

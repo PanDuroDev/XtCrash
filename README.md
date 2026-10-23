@@ -144,7 +144,7 @@ Core options and their defaults as defined in `CrashConfig`:
 | `backgroundMode` | Int | `BACKGROUND_MODE_SHOW_CUSTOM` | `SHOW_CUSTOM` shows the screen on background crashes, `SILENT` closes the app, `CRASH` delegates to the previous handler |
 | `trackActivities` | Boolean | `false` | Records an activity lifecycle log before the crash, capped at `maxActivityLogEntries` |
 | `minTimeBetweenCrashesMs` | Int | `3000` | Crash-loop guard: repeated crashes inside this window are not shown again |
-| `logErrorOnRestart` | Boolean | `true` | Logs the previous stack trace again when the error screen opens, so logcat sees it from the error process |
+| `logErrorOnRestart` | Boolean | `true` | Gates the restart-time event (the previous stack trace re-logged when the error screen opens); reaches logcat only when `loggingEnabled` is on, and your listener when attached |
 | `loggingEnabled` | Boolean | `false` | Opt-in logcat output for the library's own install and crash messages; the library is silent by default |
 | `logListener` | `CrashLogListener` | `null` | Optional sink feeding the same messages into your own logging framework |
 | `errorTitle` | String | `"Something went wrong"` | Screen title |
@@ -307,7 +307,7 @@ Track error-screen flows by implementing `CrashActivity.EventListener`: `onLaunc
 
 The listener is serialized with the crash config, so anonymous and non-static inner classes are rejected by the builder with an explanation. Use a top-level class or a static inner class.
 
-The builder also rejects listeners whose declared instance fields are not `java.io.Serializable` (static, transient, and primitive fields are exempt), so a bad field is caught at configure time with its name instead of failing during a crash. The check cannot prove everything: a field declared as `Any`/`Object` or as an interface can still hold non-serializable state, so prefer concrete serializable types or mark uncertain fields `@Transient`.
+The builder also rejects listeners whose declared instance fields are not `java.io.Serializable` (static, transient, and primitive fields are exempt), so a bad field is caught at configure time with its name instead of failing during a crash. The check cannot prove everything: a field declared as `Any`/`Object` or as an interface can still hold non-serializable state, so prefer concrete serializable types or mark uncertain fields `@Transient`. A `@Transient` field is left at its default and the listener's constructor is not re-run at deserialization, so callbacks must resolve such state when invoked (for example, by looking it up lazily) or reinitialize it explicitly.
 
 ## Logging
 

@@ -21,7 +21,7 @@ error activity's intent.
 | `backgroundMode` | Int | `BACKGROUND_MODE_SHOW_CUSTOM` | `SHOW_CUSTOM` shows the screen on background crashes, `SILENT` closes the app, `CRASH` delegates to the previous handler |
 | `trackActivities` | Boolean | `false` | Records an activity lifecycle log before the crash, capped at `maxActivityLogEntries` |
 | `minTimeBetweenCrashesMs` | Int | `3000` | Crash-loop guard: repeated crashes inside this window are not shown again |
-| `logErrorOnRestart` | Boolean | `true` | Logs the previous stack trace again when the error screen opens, so logcat shows it from the error process |
+| `logErrorOnRestart` | Boolean | `true` | Gates the restart-time event (the previous stack trace re-logged when the error screen opens); reaches logcat only when `loggingEnabled` is on, and your listener when attached |
 | `loggingEnabled` | Boolean | `false` | Opt-in logcat output for the library's own install and crash messages; the library is silent by default |
 | `logListener` | `CrashLogListener` | `null` | Optional sink feeding the same messages into your own logging framework |
 | `errorTitle` | String | `"Something went wrong"` | Screen title |
@@ -145,8 +145,11 @@ declared types are not `java.io.Serializable` — static, transient, and
 primitive fields are exempt — so a bad field fails at configure time with its
 name instead of causing a `NotSerializableException` when the config travels
 into the error process. A field declared as `Any`/`Object` or as an interface
-can still carry non-serializable state, so use concrete serializable types or
-mark it `@Transient`.
+can still carry non-serializable state, so use concrete serializable types, or
+mark it `@Transient` and keep the transient caveat in mind: deserialization
+leaves that field at its default value and does not re-run the listener's
+constructor, so callbacks such as `onCrashLog` must resolve it when invoked or
+reinitialize it explicitly.
 
 The listener accepts the standard `android.util.Log` priorities. Both together
 are also allowed. `logErrorOnRestart` remains the gate for the restart-time
