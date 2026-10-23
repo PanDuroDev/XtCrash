@@ -1,0 +1,101 @@
+---
+title: Custom Error Screen
+description: Subclass, declare in the manifest, point the config, and use the intent helpers.
+---
+
+# Custom Error Screen
+
+Replace the default screen with your own activity. Three moving parts:
+
+1. An activity class in your app.
+2. A manifest entry on its own process.
+3. One config line.
+
+## Manifest entry
+
+```xml
+<activity
+    android:name=".MyCrashActivity"
+    android:process=":error_activity"
+    android:exported="false" />
+```
+
+The process attribute is what keeps the screen alive after the crashing main
+process dies. Any legal process name works; XtCrash's own screens use
+`:xtcrash_error`.
+
+## Config line
+
+```kotlin
+CrashConfig.Builder.create()
+    .errorActivity(MyCrashActivity::class.java)
+    .apply()
+```
+
+Configure-time validation then checks the merged manifest: if the class is not
+declared there, or the entry lacks its own process, the library logs a warning
+under tag `XtCrash` when the config is applied instead of failing silently
+during a real crash.
+
+## Intent helpers
+
+The crash payload arrives in the intent extras. Static helpers on
+`CrashActivity` unpack it — all Java-callable:
+
+| Method | Returns |
+|---|---|
+| `CrashActivity.getConfigFromIntent(Intent)` | The serializable `CrashConfig` |
+| `CrashActivity.getCrashIdFromIntent(Intent)` | Crash ID |
+| `CrashActivity.getStackTraceFromIntent(Intent)` | Stack trace |
+| `CrashActivity.getActivityLogFromIntent(Intent)` | Activity lifecycle log |
+| `CrashActivity.getThreadNameFromIntent(Intent)` | Crashing thread name |
+| `CrashActivity.getThrowableClassFromIntent(Intent)` | Exception class name |
+| `CrashActivity.getThrowableMessageFromIntent(Intent)` | Exception message |
+| `CrashActivity.getCrashDateFromIntent(Intent)` | Crash timestamp |
+| `CrashActivity.getAllErrorDetailsFromIntent(Context, Intent)` | Combined details string |
+| `CrashActivity.restartApplication(Context, CrashConfig)` | Restart the app |
+| `CrashActivity.restartApplicationWithIntent(Context, Intent, CrashConfig)` | Restart to a specific target |
+| `CrashActivity.closeApplication(Context, CrashConfig)` | Exit the app |
+
+## Works without Kotlin
+
+The custom screen needs the manifest entry, the one `errorActivity(...)` line,
+and your own activity — whatever your stack. Every helper and the whole
+`CrashConfig.Builder` are static and Java-callable:
+
+| Project setup | Custom error screen |
+|---|---|
+| Java + XML | Java activity, your XML layout |
+| Kotlin + XML | Same, written in Kotlin |
+| Java + Kotlin + Compose + XML | Drop-in `ComposeErrorActivity` from the `xtcrash-compose` artifact, or your own Compose activity |
+| Java + Compose | Drop-in `ComposeErrorActivity` from Java; a fully custom Compose design needs one Kotlin file (Compose is Kotlin-only) |
+
+### Pure Java + XML custom screen
+
+```java
+public class MyErrorActivity extends Activity {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        CrashConfig config = CrashActivity.getConfigFromIntent(getIntent());
+        String errorDetails = CrashActivity.getAllErrorDetailsFromIntent(this, getIntent());
+
+        setContentView(R.layout.my_error_screen); // your XML, your design
+        // Bind any action to the library helpers:
+        // CrashActivity.restartApplication(this, config);
+        // CrashActivity.closeApplication(this, config);
+    }
+}
+```
+
+## Pitfalls
+
+- **Wrong process.** A crash screen in the main process cannot show when that
+  process is already dead — the manifest entry must carry its own
+  `android:process`.
+- **Non-serializable extras hoarding.** The payload is `Serializable`; do not
+  add your own extras that reference live objects.
+- **EventListener classes.** Static or top-level classes only — anonymous and
+  non-static inner classes serialize with the config and are rejected by the
+  builder with an explanation.

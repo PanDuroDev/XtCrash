@@ -1,0 +1,123 @@
+---
+title: Material 3 Theming
+description: Map CrashConfig colors to Material 3 color roles, keeping dark mode intact.
+---
+
+# Material 3 Theming
+
+The shipped screens paint from `CrashConfig` color values, not from a runtime
+theme — the error screen runs in the `:xtcrash_error` process, and your app's
+Compose theme objects never exist there. To make the crash screen look native to
+your Material 3 app, map your theme once at configuration time: read the M3
+color roles while the config is built, and hand the resulting `@ColorInt` values
+to the nine color options.
+
+## Color role mapping
+
+| Config option | Default (library palette) | Suggested Material 3 role |
+|---|---|---|
+| `backgroundColor` | `#D50000` | `colorScheme.surfaceContainer` or `surfaceContainerLow` (screen surface) |
+| `cardBackgroundColor` | `#FFFFFF` | `colorScheme.surfaceContainerHigh` (details card) |
+| `primaryButtonColor` | `#D50000` | `colorScheme.primary` |
+| `secondaryButtonColor` | `#F3F4F6` | `colorScheme.secondaryContainer` |
+| `titleTextColor` | `#111827` | `colorScheme.onSurface` |
+| `messageTextColor` | `#4B5563` | `colorScheme.onSurfaceVariant` |
+| `buttonTextColor` | `#FFFFFF` | `colorScheme.onPrimary` |
+| `secondaryButtonTextColor` | `#111827` | `colorScheme.onSecondaryContainer` |
+| `metaTextColor` | `#6B7280` | `colorScheme.outline` |
+
+Minor metadata (crash ID, app info) uses `metaTextColor`; it is the only option
+without a dedicated default row above — it renders exactly one role.
+
+## Source the roles hands-on
+
+Outside Compose — an `Application.onCreate()` config — read the resolved M3
+values from your app theme resources or from a fixed palette constant. Compose
+`colorScheme` values are not statically readable there, so the robust pattern is
+a night-aware palette:
+
+```kotlin
+class MyApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        val night = (resources.configuration.uiMode and
+                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val c = if (night) CrashPalette.dark else CrashPalette.light
+
+        CrashConfig.Builder.create()
+            .backgroundColor(c.surface)
+            .cardBackgroundColor(c.card)
+            .primaryButtonColor(c.primary)
+            .secondaryButtonColor(c.secondaryContainer)
+            .titleTextColor(c.onSurface)
+            .messageTextColor(c.onSurfaceVariant)
+            .buttonTextColor(c.onPrimary)
+            .secondaryButtonTextColor(c.onSecondaryContainer)
+            .metaTextColor(c.outline)
+            .apply()
+    }
+}
+```
+
+With `CrashPalette` holding your app's M3 values:
+
+```kotlin
+object CrashPalette {
+    val light = Palette(
+        surface = 0xFFFDF7F4.toInt(),
+        card = 0xFFFFFFFF.toInt(),
+        primary = 0xFFB3261E.toInt(),
+        secondaryContainer = 0xFFE2E7F3.toInt(),
+        onSurface = 0xFF1C1B1F.toInt(),
+        onSurfaceVariant = 0xFF49454F.toInt(),
+        onPrimary = 0xFFFFFFFF.toInt(),
+        onSecondaryContainer = 0xFF1A1C21.toInt(),
+        outline = 0xFF79747E.toInt(),
+    )
+    val dark = Palette(
+        surface = 0xFF141218.toInt(),
+        card = 0xFF1D1B20.toInt(),
+        primary = 0xFFF2B8B5.toInt(),
+        secondaryContainer = 0xFF44464F.toInt(),
+        onSurface = 0xFFE6E1E5.toInt(),
+        onSurfaceVariant = 0xFFCAC4D0.toInt(),
+        onPrimary = 0xFF492532.toInt(),
+        onSecondaryContainer = 0xFFE2E1E6.toInt(),
+        outline = 0xFF938F99.toInt(),
+    )
+}
+```
+
+Alternatively, for non-Compose apps that already express their theme through
+`values-night` resources, resolve the color resources at config time:
+
+```kotlin
+val c = ContextCompat.getColor(this, R.color.app_surface)
+```
+
+Resources resolve against the device's current night mode, so R.color lookups
+keep dark mode correct without palette duplication.
+
+## Status bar and background
+
+`DefaultErrorActivity` tints the status and navigation bars with
+`backgroundColor`, so a single value shapes the whole window. Dark palettes
+should keep a legible contrast pair between `backgroundColor` and
+`titleTextColor` / `messageTextColor` — check with the M3 contrast guidance for
+`onSurface` over your chosen surface.
+
+## Custom composables
+
+If you write a fully custom Compose screen (Compose page, level 3), you can skip
+config colors entirely and read `MaterialTheme.colorScheme` right inside the
+composable — the error process theme supplies the values there. In that case the
+config color options stay untouched and your screen is as theme-native as any
+other Compose UI.
+
+## Checklist
+
+1. Build both palette maps (light, dark) from your app's actual
+   `MaterialTheme.colorScheme`, or resolve the roles from `values` / `values-night`.
+2. Choose the map with `configuration.uiMode` in `Application.onCreate()`.
+3. Feed the nine options in one place alongside your other config.
+4. Force a crash in both UI modes and verify contrast.

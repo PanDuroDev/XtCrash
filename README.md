@@ -25,7 +25,9 @@ XtCrash is built on top of [CrashX](https://github.com/TutorialsAndroid/crashx),
 - [Crash Reports](#crash-reports)
 - [Event Listener](#event-listener)
 - [R8 Minification](#r8-minification)
+- [Documentation](#documentation)
 - [Architecture](#architecture)
+- [Contributing](#contributing)
 - [Attribution](#attribution)
 - [License](#license)
 
@@ -40,6 +42,8 @@ XtCrash is built on top of [CrashX](https://github.com/TutorialsAndroid/crashx),
 ### JitPack
 
 Resolve coordinates `com.github.SoufianoDev.XtCrash:xtcrash:v1.0.0`. JitPack builds this once the `v1.0.0` tag exists on the repository; no tag has been published yet, so treat the coordinates as ready once tagging happens. Sub-module artifacts follow each module's publish metadata (`xtcrash`, `xtcrash-compose`), independent of directory names.
+
+On JitPack the group mirrors the repository path (`com.github.USER.REPO:MODULE`), which is why the repo name appears in the group next to each artifact id. After the first tag, confirm the exact resolved names on [JitPack's artifact list](https://jitpack.io/#com.github.SoufianoDev/XtCrash/1.0.0).
 
 Add the repository in your root `settings.gradle.kts`:
 
@@ -147,7 +151,7 @@ Core options and their defaults as defined in `CrashConfig`:
 | `showCrashId` | Boolean | `true` | Displays the generated crash ID on the screen |
 | `crashIdPrefix` | String | `"XTCRASH"` | Prefix for generated crash IDs |
 
-Advanced options, all set through the same builder: custom labels for every button (`restartButtonText()`, `closeButtonText()`, `detailsButtonText()`, `reportButtonText()`, `copyButtonText()`), nine theme colors (`backgroundColor()`, `cardBackgroundColor()`, `primaryButtonColor()`, `secondaryButtonColor()`, `titleTextColor()`, `messageTextColor()`, `buttonTextColor()`, `secondaryButtonTextColor()`, `metaTextColor()`), a custom error icon (`errorDrawable()`), a custom restart target (`restartActivity()`), report metadata toggles (`includeDeviceInfo()`, `includeActivityLog()`, `includeStackTrace()`, `includeBuildDate()`, `includeCrashId()`), report size limits (`maxStackTraceSize()`, default `131071`, and `maxActivityLogEntries()`, default `50`), and extra report text (`additionalReportInfo()`).
+Advanced options, all set through the same builder: custom labels for every button (`restartButtonText()`, `closeButtonText()`, `detailsButtonText()`, `reportButtonText()`, `copyButtonText()`), nine theme colors (`backgroundColor()`, `cardBackgroundColor()`, `primaryButtonColor()`, `secondaryButtonColor()`, `titleTextColor()`, `messageTextColor()`, `buttonTextColor()`, `secondaryButtonTextColor()`, `metaTextColor()`), a custom error icon (`errorDrawable()`), a custom restart target (`restartActivity()`), screen detail toggles (`showCopyButtonInDetails()`, `showAppInfo()`), report metadata toggles (`includeDeviceInfo()`, `includeActivityLog()`, `includeStackTrace()`, `includeBuildDate()`, `includeCrashId()`), report size limits (`maxStackTraceSize()`, default `131071`, and `maxActivityLogEntries()`, default `50`), and extra report text (`additionalReportInfo()`).
 
 Every option reads back for building a UI from the current state: `CrashConfig.Builder.create()` starts from a copy of the current config, so sequential `apply()` calls keep previously applied settings unless overwritten.
 
@@ -307,6 +311,19 @@ The AAR ships `library/consumer-rules.pro`, so consuming apps get the keep rules
 
 Custom features are serialized through intents (config, event listener). If your app runs aggressive shrinking and you use a custom error activity or event listener, keep those classes in your own rules as well.
 
+## Documentation
+
+Extended documentation lives in `docs/` as Docusaurus-ready MDX pages:
+
+| Page | Covers |
+|---|---|
+| [Introduction](docs/introduction.mdx) | What the library does, artifact map, non-goals |
+| [Quick Start](docs/quickstart.mdx) | Install, configure, first test crash |
+| [Configuration](docs/configuration.mdx) | Complete `CrashConfig` reference |
+| [Custom Error Screen](docs/custom-error-screen.mdx) | Subclass, manifest entry, intent helpers |
+| [Compose](docs/compose.mdx) | Drop-in activity, composable screen, custom designs |
+| [Material 3 Theming](docs/material-3-theming.mdx) | Config colors mapped to M3 color roles |
+
 ## Architecture
 
 ```
@@ -318,6 +335,10 @@ library/src/main/java/io/github/soufianodev/xtcrash/
 ```
 
 Flow: the provider installs an uncaught-exception handler, preserving any previously installed one (initialize XtCrash first, then Firebase Crashlytics, ACRA, or another handler, so the chain stays intact). A crash builds the serializable payload, then either launches the error activity or delegates by `backgroundMode`. The error activity runs in a dedicated `:xtcrash_error` process and survives the main process dying. `minTimeBetweenCrashesMs` prevents restart loops.
+
+## Contributing
+
+Development setup, build verification, review process, and code conventions: [CONTRIBUTING](CONTRIBUTING.md). Pull requests get an automated CodeRabbit review on open and on each new push; a human maintainer closes the merge. Security issues go by email to `contact@crashx.dev` rather than the public tracker.
 
 ## Attribution
 

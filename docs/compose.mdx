@@ -1,0 +1,107 @@
+---
+title: Compose
+description: Two levels of Compose use — the drop-in ComposeErrorActivity and the XtCrashErrorScreen composable.
+---
+
+# Compose
+
+Compose apps work out of the box with the core artifact: install, crash
+catching, activity tracking, and the default screen are unchanged. The core
+carries no Compose dependency.
+
+For Compose-rendered crash screens, the optional `xtcrash-compose` artifact
+provides two levels.
+
+## Coordinates
+
+```kotlin
+dependencies {
+    implementation("com.github.SoufianoDev.XtCrash:xtcrash-compose:1.0.0") // same tag as the core
+}
+```
+
+## Level 1: drop-in
+
+The artifact ships `ComposeErrorActivity`, a hosted crash activity with its own
+manifest declaration (`:xtcrash_error` process, `launchMode singleTask`,
+excluded from recents). One config line enables it:
+
+```kotlin
+CrashConfig.Builder.create()
+    .errorActivity(ComposeErrorActivity::class.java)
+    .apply()
+```
+
+No manifest entry and no crash-activity code in the consumer — the declaration
+merges from the artifact.
+
+## Level 2: config-driven composable
+
+`XtCrashErrorScreen` mirrors the default XML screen. It is driven entirely by
+`CrashConfig` — colors, labels, crash ID, the error-details dialog, copy to
+clipboard, and report sharing behave exactly like the XML screen. It reuses the
+core string resources, so translations apply.
+
+Point `errorActivity()` at your own `ComponentActivity`, then render the screen
+from the crash intent:
+
+```kotlin
+class ComposeCrashActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val config = CrashActivity.getConfigFromIntent(intent) ?: run { finish(); return }
+        setContent {
+            XtCrashErrorScreen(
+                config = config,
+                errorDetails = CrashActivity.getAllErrorDetailsFromIntent(this, intent),
+                crashId = CrashActivity.getCrashIdFromIntent(intent) ?: "",
+            )
+        }
+    }
+}
+```
+
+Restart and close buttons call `CrashActivity.restartApplication(...)` and
+`closeApplication(...)` internally; you only place the screen in `setContent`.
+
+## Level 3: build your own
+
+`XtCrashErrorScreen` mirrors the default look. For a fully custom design, skip
+it and render any composable from the crash activity:
+
+```kotlin
+class ComposeCrashActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val config = CrashActivity.getConfigFromIntent(intent) ?: run { finish(); return }
+        setContent { MyAppCrashScreen(config) }
+    }
+}
+
+@Composable
+fun MyAppCrashScreen(config: CrashConfig) {
+    val activity = LocalContext.current as? Activity ?: return
+    // Your UI, your styling — config colors and labels are optional. Restart and close
+    // stay library calls so the config's restart intent and close policy are applied:
+    Column {
+        Button(onClick = { CrashActivity.restartApplication(activity, config) }) { Text("Restart") }
+        Button(onClick = { CrashActivity.closeApplication(activity, config) }) { Text("Close") }
+    }
+}
+```
+
+## Choosing a level
+
+| Level | Code you write | Design freedom |
+|---|---|---|
+| Drop-in | One config line | Mirrors the default screen |
+| Config-driven screen | One activity + `setContent` | Same layout, full config control |
+| Your own composable | Your screen + helper calls | Unrestricted |
+
+## Notes
+
+- Compose is Kotlin-only; Java consumers can use the drop-in activity from Java.
+- The artifact pins `androidx.activity:activity-compose` itself, so no extra
+  BOM alignment is required for the shipped activity.
+- Both shipped screens receive the same serializable payload as the XML screen;
+  switching between them is a config-only change.
