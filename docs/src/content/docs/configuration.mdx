@@ -140,6 +140,14 @@ class ForwardingLogListener : CrashLogListener {
 }
 ```
 
+Beyond the top-level/static rule, the builder rejects listener fields whose
+declared types are not `java.io.Serializable` — static, transient, and
+primitive fields are exempt — so a bad field fails at configure time with its
+name instead of causing a `NotSerializableException` when the config travels
+into the error process. A field declared as `Any`/`Object` or as an interface
+can still carry non-serializable state, so use concrete serializable types or
+mark it `@Transient`.
+
 The listener accepts the standard `android.util.Log` priorities. Both together
 are also allowed. `logErrorOnRestart` remains the gate for the restart-time
 stack trace. To cover install-time messages as well, apply the config before

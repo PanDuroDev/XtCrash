@@ -307,6 +307,8 @@ Track error-screen flows by implementing `CrashActivity.EventListener`: `onLaunc
 
 The listener is serialized with the crash config, so anonymous and non-static inner classes are rejected by the builder with an explanation. Use a top-level class or a static inner class.
 
+The builder also rejects listeners whose declared instance fields are not `java.io.Serializable` (static, transient, and primitive fields are exempt), so a bad field is caught at configure time with its name instead of failing during a crash. The check cannot prove everything: a field declared as `Any`/`Object` or as an interface can still hold non-serializable state, so prefer concrete serializable types or mark uncertain fields `@Transient`.
+
 ## Logging
 
 The library is silent by default and owns nothing beyond its own messages; where its diagnostics go is your decision:
@@ -339,7 +341,7 @@ class ForwardingLogListener : CrashLogListener {
 }
 ```
 
-The listener is serialized with the crash config (the crash data moves into the `:xtcrash_error` process), so the same top-level/static-class rule as `eventListener()` applies. Configure logging in `Application.attachBaseContext()` if you also want install-time messages.
+The listener is serialized with the crash config (the crash data moves into the `:xtcrash_error` process), so the same top-level/static-class rule and field-validation rules as `eventListener()` apply. Configure logging in `Application.attachBaseContext()` if you also want install-time messages.
 
 ## R8 Minification
 

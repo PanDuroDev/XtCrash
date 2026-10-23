@@ -240,6 +240,33 @@ class CrashConfig : Serializable {
         private var config = CrashConfig()
 
         companion object {
+            /**
+             * Best-effort guard so a listener cannot turn a crash into a lost error
+             * screen: the listener travels inside the serialized config, so its
+             * declared non-static, non-transient fields must have serializable
+             * types. This catches the common failures at configure time; it cannot
+             * prove everything, e.g. a field declared as Any/Object or as an
+             * interface can still hold non-serializable runtime state.
+             */
+            private fun checkListenerFields(listenerName: String, listener: Serializable) {
+                var clazz: Class<*> = listener.javaClass
+                while (clazz != Any::class.java) {
+                    for (field in clazz.declaredFields) {
+                        if (Modifier.isStatic(field.modifiers)
+                                || Modifier.isTransient(field.modifiers)
+                                || field.type.isPrimitive) {
+                            continue
+                        }
+                        if (!Serializable::class.java.isAssignableFrom(field.type)) {
+                            throw IllegalArgumentException(
+                                    "The " + listenerName + " field \"" + field.name + "\" ("
+                                            + field.type.name + ") is not java.io.Serializable, but the listener is carried inside the serialized crash config. Make the field Serializable, mark it transient, or remove it.")
+                        }
+                    }
+                    clazz = clazz.superclass ?: break
+                }
+            }
+
             @JvmStatic
             fun create(): Builder {
                 val builder = Builder()
@@ -355,10 +382,12 @@ class CrashConfig : Serializable {
         }
 
         fun eventListener(eventListener: CrashActivity.EventListener?): Builder {
-            if (eventListener != null
-                    && eventListener.javaClass.enclosingClass != null
-                    && !Modifier.isStatic(eventListener.javaClass.modifiers)) {
-                throw IllegalArgumentException("The event listener cannot be an anonymous or non-static inner class because it must be serialized. Use a top-level class or static inner class.")
+            if (eventListener != null) {
+                if (eventListener.javaClass.enclosingClass != null
+                        && !Modifier.isStatic(eventListener.javaClass.modifiers)) {
+                    throw IllegalArgumentException("The event listener cannot be an anonymous or non-static inner class because it must be serialized. Use a top-level class or static inner class.")
+                }
+                checkListenerFields("event listener", eventListener)
             }
             config.eventListener = eventListener
             return this
@@ -370,10 +399,12 @@ class CrashConfig : Serializable {
         }
 
         fun logListener(logListener: CrashLogListener?): Builder {
-            if (logListener != null
-                    && logListener.javaClass.enclosingClass != null
-                    && !Modifier.isStatic(logListener.javaClass.modifiers)) {
-                throw IllegalArgumentException("The log listener cannot be an anonymous or non-static inner class because it must be serialized. Use a top-level class or static inner class.")
+            if (logListener != null) {
+                if (logListener.javaClass.enclosingClass != null
+                        && !Modifier.isStatic(logListener.javaClass.modifiers)) {
+                    throw IllegalArgumentException("The log listener cannot be an anonymous or non-static inner class because it must be serialized. Use a top-level class or static inner class.")
+                }
+                checkListenerFields("log listener", logListener)
             }
             config.logListener = logListener
             return this
