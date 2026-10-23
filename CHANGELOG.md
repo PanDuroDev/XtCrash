@@ -8,6 +8,10 @@
 - `ComposeErrorActivity` in the `xtcrash-compose` artifact: a hosted, manifest-declared Compose error screen enabled with one config line (`errorActivity(ComposeErrorActivity::class.java)`), no consumer-side crash activity or manifest entry needed.
 - Configure-time validation of custom error activities: when the configured activity is missing from the merged manifest or lacks its own `android:process`, the library logs a warning when the config is applied, instead of failing silently at crash time. All flavors (Java/Kotlin, XML/Compose) benefit.
 
+### Fixed
+
+- Listener validation now rejects a non-serializable superclass without an accessible no-argument constructor before the crash config is sent to the error process.
+
 ### Changed
 
 - Migrated library and sample sources from Java to Kotlin.

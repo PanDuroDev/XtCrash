@@ -248,8 +248,8 @@ class CrashConfig : Serializable {
              * prove everything, e.g. a field declared as Any/Object or as an
              * interface can still hold non-serializable runtime state. Only
              * serializable superclasses are walked: a non-serializable ancestor's
-             * fields are initialized by its no-argument constructor instead of the
-             * stream.
+             * fields are initialized by its accessible no-argument constructor
+             * instead of the stream, so that constructor must exist.
              */
             private fun checkListenerFields(listenerName: String, listener: Serializable) {
                 var clazz: Class<*> = listener.javaClass
@@ -271,6 +271,22 @@ class CrashConfig : Serializable {
                         // A non-serializable ancestor's state is not written to the
                         // stream; deserialization initializes it through the
                         // ancestor's no-argument constructor.
+                        val constructor = try {
+                            superclass.getDeclaredConstructor()
+                        } catch (_: NoSuchMethodException) {
+                            null
+                        }
+                        val listenerClass = listener.javaClass
+                        val samePackage = listenerClass.classLoader === superclass.classLoader
+                                && listenerClass.name.substringBeforeLast('.', "") ==
+                                superclass.name.substringBeforeLast('.', "")
+                        if (constructor == null || Modifier.isPrivate(constructor.modifiers)
+                                || (!Modifier.isPublic(constructor.modifiers)
+                                && !Modifier.isProtected(constructor.modifiers) && !samePackage)) {
+                            throw IllegalArgumentException(
+                                    "The " + listenerName + " superclass " + superclass.name
+                                            + " is not java.io.Serializable and must have an accessible no-argument constructor so the listener can be deserialized.")
+                        }
                         break
                     }
                     clazz = superclass
