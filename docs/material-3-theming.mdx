@@ -109,10 +109,28 @@ should keep a legible contrast pair between `backgroundColor` and
 ## Custom composables
 
 If you write a fully custom Compose screen (Compose page, level 3), you can skip
-config colors entirely and read `MaterialTheme.colorScheme` right inside the
-composable — the error process theme supplies the values there. In that case the
-config color options stay untouched and your screen is as theme-native as any
-other Compose UI.
+config colors entirely and read `MaterialTheme.colorScheme` inside the
+composable. The error process does not carry the app's runtime theme objects;
+only the manifest-level theme resolves there, so the app's theme composable must
+wrap the screen inside `setContent`:
+
+```kotlin
+class MyComposeCrashActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val config = CrashActivity.getConfigFromIntent(intent) ?: run { finish(); return }
+        setContent {
+            AppTheme {
+                MyAppCrashScreen(config)
+            }
+        }
+    }
+}
+```
+
+Config color options then stay untouched, and the screen is as theme-native as
+any other Compose UI, with dark mode following the manifest theme's
+`values-night` resources.
 
 ## Checklist
 
