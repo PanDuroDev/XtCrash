@@ -120,7 +120,7 @@ fun XtCrashPreview() {
         .showRestartButton(true)
         .showCloseButton(true)
         .showErrorDetails(true)
-        .apply() // apply() is process-global; fine in a preview process
+        .get()
     XtCrashErrorScreen(
         config = config,
         errorDetails = "java.lang.IllegalStateException: preview\n\tat ...",
