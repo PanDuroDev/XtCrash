@@ -34,6 +34,7 @@ import io.github.soufianodev.xtcrash.config.CrashConfig
 class DefaultErrorActivity : AppCompatActivity() {
 
     private lateinit var config: CrashConfig
+    private var detailsDialog: AlertDialog? = null
 
     @SuppressLint("PrivateResource")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,11 +51,36 @@ class DefaultErrorActivity : AppCompatActivity() {
 
         setContentView(R.layout.crash_default_error_activity)
 
+        renderCrash()
+    }
+
+    /**
+     * Re-delivers a crash into a live instance. With `launchMode="singleTask"`
+     * the platform routes a repeat launch of this screen through
+     * [onNewIntent] instead of a new instance; without this hook the old
+     * screen would keep showing the previous crash and the restart-time
+     * trace would not be logged again.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        config = CrashActivity.getConfigFromIntent(intent)
+        renderCrash()
+    }
+
+    private fun renderCrash() {
+        detailsDialog?.dismiss()
+        detailsDialog = null
         setupWindow()
         setupTextContent()
         setupMetaContent()
         setupImage()
         setupButtons()
+    }
+
+    override fun onDestroy() {
+        detailsDialog?.dismiss()
+        super.onDestroy()
     }
 
     private fun setupWindow() {
@@ -113,10 +139,10 @@ class DefaultErrorActivity : AppCompatActivity() {
     }
 
     private fun setupImage() {
-        val drawableId: Int? = config.errorDrawable
+        val drawableId = config.errorDrawable ?: R.drawable.crash_ic_bug_report
         val errorImageView: ImageView? = findViewById(R.id.crash_error_activity_image)
 
-        if (errorImageView != null && drawableId != null) {
+        if (errorImageView != null) {
             errorImageView.setImageDrawable(ResourcesCompat.getDrawable(resources, drawableId, theme))
         }
     }
@@ -211,18 +237,20 @@ class DefaultErrorActivity : AppCompatActivity() {
     }
 
     private fun showErrorDetailsDialog() {
+        val errorInformation = CrashActivity.getAllErrorDetailsFromIntent(this@DefaultErrorActivity, intent)
         val builder = AlertDialog.Builder(this@DefaultErrorActivity)
                 .setTitle(R.string.customactivityoncrash_error_activity_error_details_title)
-                .setMessage(CrashActivity.getAllErrorDetailsFromIntent(this@DefaultErrorActivity, intent))
+                .setMessage(errorInformation)
                 .setPositiveButton(R.string.customactivityoncrash_error_activity_error_details_close, null)
 
         if (config.isShowCopyButtonInDetails) {
             val copyText = config.copyButtonText
                     ?: getString(R.string.customactivityoncrash_error_activity_error_details_copy)
-            builder.setNeutralButton(copyText) { _, _ -> copyErrorToClipboard() }
+            builder.setNeutralButton(copyText) { _, _ -> copyErrorToClipboard(errorInformation) }
         }
 
         val dialog = builder.show()
+        detailsDialog = dialog
         val textView: TextView? = dialog.findViewById(android.R.id.message)
         if (textView != null) {
             textView.setTextSize(
@@ -232,8 +260,7 @@ class DefaultErrorActivity : AppCompatActivity() {
         }
     }
 
-    private fun copyErrorToClipboard() {
-        val errorInformation = CrashActivity.getAllErrorDetailsFromIntent(this@DefaultErrorActivity, intent)
+    private fun copyErrorToClipboard(errorInformation: String) {
         val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager?
 
         if (clipboard != null) {
@@ -270,7 +297,7 @@ class DefaultErrorActivity : AppCompatActivity() {
         try {
             startActivity(Intent.createChooser(sendIntent, chooserTitle))
         } catch (e: ActivityNotFoundException) {
-            copyErrorToClipboard()
+            copyErrorToClipboard(errorInformation)
             Toast.makeText(this, R.string.xtcrash_no_share_app_found, Toast.LENGTH_SHORT).show()
         }
     }
