@@ -7,6 +7,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.IntDef
 
 import io.github.soufianodev.xtcrash.CrashActivity
+import io.github.soufianodev.xtcrash.log.CrashLogListener
 
 import java.io.Serializable
 import java.lang.reflect.Modifier
@@ -63,6 +64,29 @@ class CrashConfig : Serializable {
     var isShowCloseButton: Boolean = true
 
     var isLogErrorOnRestart: Boolean = true
+
+    /**
+     * Whether XtCrash writes its own lifecycle and crash messages to the Android
+     * logcat. Default: false, because logging is opt-in — developers who want
+     * the library visible in logcat enable it explicitly, and everyone else gets
+     * a silent library.
+     *
+     * Install-time events are logged only when the config is applied before the
+     * init provider runs (configure in `Application.attachBaseContext()`);
+     * later-applied configs still cover every crash-time and error-screen event.
+     */
+    var isLoggingEnabled: Boolean = false
+
+    /**
+     * Optional listener that receives the same diagnostic events that logcat
+     * would receive, so they can enter the developer's own logging framework.
+     * The library only forwards them; it never formats or stores them.
+     *
+     * Independent of [isLoggingEnabled]: both sinks are allowed simultaneously.
+     * Must be a top-level or static class because it is serialized into the
+     * error-screen process.
+     */
+    var logListener: CrashLogListener? = null
 
     var isTrackActivities: Boolean = false
 
@@ -216,6 +240,59 @@ class CrashConfig : Serializable {
         private var config = CrashConfig()
 
         companion object {
+            /**
+             * Best-effort guard so a listener cannot turn a crash into a lost error
+             * screen: the listener travels inside the serialized config, so its
+             * declared non-static, non-transient fields must have serializable
+             * types. This catches the common failures at configure time; it cannot
+             * prove everything, e.g. a field declared as Any/Object or as an
+             * interface can still hold non-serializable runtime state. Only
+             * serializable superclasses are walked: a non-serializable ancestor's
+             * fields are initialized by its accessible no-argument constructor
+             * instead of the stream, so that constructor must exist.
+             */
+            private fun checkListenerFields(listenerName: String, listener: Serializable) {
+                var clazz: Class<*> = listener.javaClass
+                while (true) {
+                    for (field in clazz.declaredFields) {
+                        if (Modifier.isStatic(field.modifiers)
+                                || Modifier.isTransient(field.modifiers)
+                                || field.type.isPrimitive) {
+                            continue
+                        }
+                        if (!Serializable::class.java.isAssignableFrom(field.type)) {
+                            throw IllegalArgumentException(
+                                    "The " + listenerName + " field \"" + field.name + "\" ("
+                                            + field.type.name + ") is not java.io.Serializable, but the listener is carried inside the serialized crash config. Make the field Serializable, mark it transient, or remove it.")
+                        }
+                    }
+                    val superclass = clazz.superclass ?: break
+                    if (!Serializable::class.java.isAssignableFrom(superclass)) {
+                        // A non-serializable ancestor's state is not written to the
+                        // stream; deserialization initializes it through the
+                        // ancestor's no-argument constructor.
+                        val constructor = try {
+                            superclass.getDeclaredConstructor()
+                        } catch (_: NoSuchMethodException) {
+                            null
+                        }
+                        val listenerClass = listener.javaClass
+                        val samePackage = listenerClass.classLoader === superclass.classLoader
+                                && listenerClass.name.substringBeforeLast('.', "") ==
+                                superclass.name.substringBeforeLast('.', "")
+                        if (constructor == null || Modifier.isPrivate(constructor.modifiers)
+                                || (!Modifier.isPublic(constructor.modifiers)
+                                && !Modifier.isProtected(constructor.modifiers) && !samePackage)) {
+                            throw IllegalArgumentException(
+                                    "The " + listenerName + " superclass " + superclass.name
+                                            + " is not java.io.Serializable and must have an accessible no-argument constructor so the listener can be deserialized.")
+                        }
+                        break
+                    }
+                    clazz = superclass
+                }
+            }
+
             @JvmStatic
             fun create(): Builder {
                 val builder = Builder()
@@ -237,6 +314,8 @@ class CrashConfig : Serializable {
                 target.errorActivityClass = source.errorActivityClass
                 target.restartActivityClass = source.restartActivityClass
                 target.eventListener = source.eventListener
+                target.isLoggingEnabled = source.isLoggingEnabled
+                target.logListener = source.logListener
                 target.errorTitle = source.errorTitle
                 target.errorMessage = source.errorMessage
                 target.restartButtonText = source.restartButtonText
@@ -329,12 +408,31 @@ class CrashConfig : Serializable {
         }
 
         fun eventListener(eventListener: CrashActivity.EventListener?): Builder {
-            if (eventListener != null
-                    && eventListener.javaClass.enclosingClass != null
-                    && !Modifier.isStatic(eventListener.javaClass.modifiers)) {
-                throw IllegalArgumentException("The event listener cannot be an anonymous or non-static inner class because it must be serialized. Use a top-level class or static inner class.")
+            if (eventListener != null) {
+                if (eventListener.javaClass.enclosingClass != null
+                        && !Modifier.isStatic(eventListener.javaClass.modifiers)) {
+                    throw IllegalArgumentException("The event listener cannot be an anonymous or non-static inner class because it must be serialized. Use a top-level class or static inner class.")
+                }
+                checkListenerFields("event listener", eventListener)
             }
             config.eventListener = eventListener
+            return this
+        }
+
+        fun loggingEnabled(isLoggingEnabled: Boolean): Builder {
+            config.isLoggingEnabled = isLoggingEnabled
+            return this
+        }
+
+        fun logListener(logListener: CrashLogListener?): Builder {
+            if (logListener != null) {
+                if (logListener.javaClass.enclosingClass != null
+                        && !Modifier.isStatic(logListener.javaClass.modifiers)) {
+                    throw IllegalArgumentException("The log listener cannot be an anonymous or non-static inner class because it must be serialized. Use a top-level class or static inner class.")
+                }
+                checkListenerFields("log listener", logListener)
+            }
+            config.logListener = logListener
             return this
         }
 

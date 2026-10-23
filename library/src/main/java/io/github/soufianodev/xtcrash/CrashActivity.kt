@@ -65,13 +65,45 @@ object CrashActivity {
     private var isInBackground = true
     private var lifecycleCallbacksRegistered = false
 
+    /**
+     * Routes a diagnostic event to the developer-provided sink (if any) and to
+     * logcat (if enabled). With the default config, the library stays silent.
+     */
+    private fun reportLog(priority: Int, message: String, throwable: Throwable? = null) {
+        reportLog(config, priority, message, throwable)
+    }
+
+    private fun reportLog(crashConfig: CrashConfig?,
+                          priority: Int,
+                          message: String,
+                          throwable: Throwable? = null) {
+        // A failing sink must never escape into crash handling or install; logcat
+        // delivery still happens whether or not the sink works.
+        crashConfig?.logListener?.let { sink ->
+            try {
+                sink.onCrashLog(priority, TAG, message, throwable)
+            } catch (sinkError: Throwable) {
+                if (crashConfig.isLoggingEnabled) {
+                    Log.e(TAG, "XtCrash log listener failed to deliver a diagnostic event.", sinkError)
+                }
+            }
+        }
+        if (crashConfig?.isLoggingEnabled == true) {
+            when (priority) {
+                Log.INFO -> Log.i(TAG, message, throwable)
+                Log.WARN -> Log.w(TAG, message, throwable)
+                else -> Log.e(TAG, message, throwable)
+            }
+        }
+    }
+
     @JvmStatic
     @Synchronized
     @RestrictTo(RestrictTo.Scope.LIBRARY)
     fun install(context: Context?) {
         try {
             if (context == null) {
-                Log.e(TAG, "Install failed: context is null.")
+                reportLog(config, Log.ERROR, "Install failed: context is null.")
                 return
             }
 
@@ -80,12 +112,12 @@ object CrashActivity {
             val oldHandler = Thread.getDefaultUncaughtExceptionHandler()
 
             if (oldHandler is XtCrashUncaughtExceptionHandler) {
-                Log.i(TAG, "XtCrash is already installed.")
+                reportLog(config, Log.INFO, "XtCrash is already installed.")
                 return
             }
 
             if (oldHandler != null && !oldHandler.javaClass.name.startsWith(DEFAULT_HANDLER_PACKAGE_NAME)) {
-                Log.w(TAG, "Another UncaughtExceptionHandler is already installed. XtCrash will preserve it and call it when needed.")
+                reportLog(config, Log.WARN, "Another UncaughtExceptionHandler is already installed. XtCrash will preserve it and call it when needed.")
             }
 
             Thread.setDefaultUncaughtExceptionHandler(XtCrashUncaughtExceptionHandler(oldHandler))
@@ -95,9 +127,9 @@ object CrashActivity {
                 lifecycleCallbacksRegistered = true
             }
 
-            Log.i(TAG, "XtCrash $VERSION has been installed.")
+            reportLog(config, Log.INFO, "XtCrash $VERSION has been installed.")
         } catch (t: Throwable) {
-            Log.e(TAG, "An unknown error occurred while installing XtCrash.", t)
+            reportLog(config, Log.ERROR, "An unknown error occurred while installing XtCrash.", t)
         }
     }
 
@@ -117,7 +149,7 @@ object CrashActivity {
             return
         }
 
-        Log.e(TAG, "App crashed. XtCrash is preparing the error screen.", throwable)
+        reportLog(Log.ERROR, "App crashed. XtCrash is preparing the error screen.", throwable)
 
         try {
             val app = application
@@ -127,7 +159,7 @@ object CrashActivity {
             }
 
             if (hasCrashedInTheLastSeconds(app)) {
-                Log.e(TAG, "Recent crash detected. Skipping XtCrash UI to avoid a restart loop.", throwable)
+                reportLog(Log.ERROR, "Recent crash detected. Skipping XtCrash UI to avoid a restart loop.", throwable)
                 callOldHandlerOrKill(oldHandler, thread, throwable)
                 return
             }
@@ -140,7 +172,7 @@ object CrashActivity {
             }
 
             if (isStackTraceLikelyConflictive(throwable, errorActivityClass)) {
-                Log.e(TAG, "The Application class or error activity crashed. XtCrash UI will not be launched.", throwable)
+                reportLog(Log.ERROR, "The Application class or error activity crashed. XtCrash UI will not be launched.", throwable)
                 callOldHandlerOrKill(oldHandler, thread, throwable)
                 return
             }
@@ -155,7 +187,7 @@ object CrashActivity {
             finishLastActivity()
             killCurrentProcess()
         } catch (xtCrashFailure: Throwable) {
-            Log.e(TAG, "XtCrash failed while handling the crash.", xtCrashFailure)
+            reportLog(Log.ERROR, "XtCrash failed while handling the crash.", xtCrashFailure)
             callOldHandlerOrKill(oldHandler, thread, throwable)
         }
     }
@@ -184,7 +216,7 @@ object CrashActivity {
         }
 
         if (config.isShowRestartButton && config.restartActivityClass == null) {
-            config.restartActivityClass = guessRestartActivityClass(app)
+            config.restartActivityClass = guessRestartActivityClass(app, config)
         }
 
         intent.putExtra(EXTRA_CONFIG, config)
@@ -317,7 +349,7 @@ object CrashActivity {
         if (crashConfig.isLogErrorOnRestart) {
             val stackTrace = getStackTraceFromIntent(intent)
             if (stackTrace != null) {
-                Log.e(TAG, "The previous app process crashed. Stack trace:\n$stackTrace")
+                reportLog(crashConfig, Log.ERROR, "The previous app process crashed. Stack trace:\n$stackTrace")
             }
         }
 
@@ -420,7 +452,7 @@ object CrashActivity {
     fun restartApplication(activity: Activity, crashConfig: CrashConfig) {
         var restartActivityClass: Class<out Activity>? = crashConfig.restartActivityClass
         if (restartActivityClass == null) {
-            restartActivityClass = guessRestartActivityClass(activity.applicationContext)
+            restartActivityClass = guessRestartActivityClass(activity.applicationContext, crashConfig)
         }
 
         if (restartActivityClass == null) {
@@ -459,7 +491,7 @@ object CrashActivity {
         val app = application
         val errorActivityClass = crashConfig.errorActivityClass
         if (app != null && errorActivityClass != null && errorActivityClass != DefaultErrorActivity::class.java) {
-            validateCustomErrorActivity(app, errorActivityClass)
+            validateCustomErrorActivity(app, crashConfig, errorActivityClass)
         }
     }
 
@@ -468,17 +500,17 @@ object CrashActivity {
      * in the main process (the crashing process is killed right after the screen launches).
      * Warnings only — throwing here during provider init would break app startup.
      */
-    private fun validateCustomErrorActivity(app: Application, errorActivityClass: Class<out Activity>) {
+    private fun validateCustomErrorActivity(app: Application, crashConfig: CrashConfig, errorActivityClass: Class<out Activity>) {
         val mainProcessName = app.applicationInfo.processName ?: app.packageName
         try {
             val info = app.packageManager.getActivityInfo(ComponentName(app, errorActivityClass), 0)
             if (info.processName == mainProcessName) {
-                Log.e(TAG, "XtCrash config warning: error activity " + errorActivityClass.name
+                reportLog(crashConfig, Log.ERROR, "XtCrash config warning: error activity " + errorActivityClass.name
                         + " runs in the main process. Add its own android:process=\"...\" attribute to the manifest entry; "
                         + "the crashing process is killed immediately after the screen launches, so an in-process screen dies before it is shown.")
             }
         } catch (e: PackageManager.NameNotFoundException) {
-            Log.e(TAG, "XtCrash config warning: error activity " + errorActivityClass.name
+            reportLog(crashConfig, Log.ERROR, "XtCrash config warning: error activity " + errorActivityClass.name
                     + " is not declared in the merged manifest. Register an <activity> entry for it with its own android:process so the screen can launch.")
         }
     }
@@ -559,15 +591,15 @@ object CrashActivity {
         return first.uppercaseChar() + value.substring(1)
     }
 
-    private fun guessRestartActivityClass(context: Context): Class<out Activity>? {
-        var resolvedActivityClass: Class<out Activity>? = getRestartActivityClassWithIntentFilter(context)
+    private fun guessRestartActivityClass(context: Context, crashConfig: CrashConfig): Class<out Activity>? {
+        var resolvedActivityClass: Class<out Activity>? = getRestartActivityClassWithIntentFilter(context, crashConfig)
         if (resolvedActivityClass == null) {
-            resolvedActivityClass = getLauncherActivity(context)
+            resolvedActivityClass = getLauncherActivity(context, crashConfig)
         }
         return resolvedActivityClass
     }
 
-    private fun getRestartActivityClassWithIntentFilter(context: Context): Class<out Activity>? {
+    private fun getRestartActivityClassWithIntentFilter(context: Context, crashConfig: CrashConfig): Class<out Activity>? {
         val searchedIntent = Intent().setAction(INTENT_ACTION_RESTART_ACTIVITY).setPackage(context.packageName)
         val resolveInfos = context.packageManager.queryIntentActivities(
                 searchedIntent,
@@ -580,13 +612,13 @@ object CrashActivity {
                 @Suppress("UNCHECKED_CAST")
                 return Class.forName(resolveInfo.activityInfo.name) as Class<out Activity>
             } catch (e: ClassNotFoundException) {
-                Log.e(TAG, "Failed to resolve restart activity class from intent filter.", e)
+                reportLog(crashConfig, Log.ERROR, "Failed to resolve restart activity class from intent filter.", e)
             }
         }
         return null
     }
 
-    private fun getLauncherActivity(context: Context): Class<out Activity>? {
+    private fun getLauncherActivity(context: Context, crashConfig: CrashConfig): Class<out Activity>? {
         val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
         val component = intent?.component
         if (intent != null && component != null) {
@@ -594,7 +626,7 @@ object CrashActivity {
                 @Suppress("UNCHECKED_CAST")
                 return Class.forName(component.className) as Class<out Activity>
             } catch (e: ClassNotFoundException) {
-                Log.e(TAG, "Failed to resolve launcher activity class.", e)
+                reportLog(crashConfig, Log.ERROR, "Failed to resolve launcher activity class.", e)
             }
         }
         return null
@@ -617,7 +649,7 @@ object CrashActivity {
                 @Suppress("UNCHECKED_CAST")
                 return Class.forName(resolveInfo.activityInfo.name) as Class<out Activity>
             } catch (e: ClassNotFoundException) {
-                Log.e(TAG, "Failed to resolve error activity class from intent filter.", e)
+                reportLog(Log.ERROR, "Failed to resolve error activity class from intent filter.", e)
             }
         }
         return null
@@ -645,7 +677,7 @@ object CrashActivity {
         try {
             config.eventListener?.onLaunchErrorActivity()
         } catch (listenerError: Throwable) {
-            Log.e(TAG, "XtCrash event listener failed on launch.", listenerError)
+            reportLog(Log.ERROR, "XtCrash event listener failed on launch.", listenerError)
         }
     }
 
@@ -653,7 +685,7 @@ object CrashActivity {
         try {
             crashConfig.eventListener?.onRestartAppFromErrorActivity()
         } catch (listenerError: Throwable) {
-            Log.e(TAG, "XtCrash event listener failed on restart.", listenerError)
+            reportLog(crashConfig, Log.ERROR, "XtCrash event listener failed on restart.", listenerError)
         }
     }
 
@@ -661,7 +693,7 @@ object CrashActivity {
         try {
             crashConfig.eventListener?.onCloseAppFromErrorActivity()
         } catch (listenerError: Throwable) {
-            Log.e(TAG, "XtCrash event listener failed on close.", listenerError)
+            reportLog(crashConfig, Log.ERROR, "XtCrash event listener failed on close.", listenerError)
         }
     }
 
