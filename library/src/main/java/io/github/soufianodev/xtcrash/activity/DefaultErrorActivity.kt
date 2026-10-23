@@ -139,10 +139,10 @@ class DefaultErrorActivity : AppCompatActivity() {
     }
 
     private fun setupImage() {
-        val drawableId: Int? = config.errorDrawable
+        val drawableId = config.errorDrawable ?: R.drawable.crash_ic_bug_report
         val errorImageView: ImageView? = findViewById(R.id.crash_error_activity_image)
 
-        if (errorImageView != null && drawableId != null) {
+        if (errorImageView != null) {
             errorImageView.setImageDrawable(ResourcesCompat.getDrawable(resources, drawableId, theme))
         }
     }
