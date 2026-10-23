@@ -34,6 +34,7 @@ import io.github.soufianodev.xtcrash.config.CrashConfig
 class DefaultErrorActivity : AppCompatActivity() {
 
     private lateinit var config: CrashConfig
+    private var detailsDialog: AlertDialog? = null
 
     @SuppressLint("PrivateResource")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,11 +61,6 @@ class DefaultErrorActivity : AppCompatActivity() {
      * screen would keep showing the previous crash and the restart-time
      * trace would not be logged again.
      */
-    // shortcut: an Android 16 device was also seen re-presenting the cached
-    // task with NO callback at all, which this hook cannot catch - that case
-    // keeps showing the previous crash's data. Ceiling: platform intent
-    // delivery; upgrade path if devices reproduce it is taskAffinity or
-    // launch-flag hardening, then a device matrix re-test.
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -73,11 +69,18 @@ class DefaultErrorActivity : AppCompatActivity() {
     }
 
     private fun renderCrash() {
+        detailsDialog?.dismiss()
+        detailsDialog = null
         setupWindow()
         setupTextContent()
         setupMetaContent()
         setupImage()
         setupButtons()
+    }
+
+    override fun onDestroy() {
+        detailsDialog?.dismiss()
+        super.onDestroy()
     }
 
     private fun setupWindow() {
@@ -234,18 +237,20 @@ class DefaultErrorActivity : AppCompatActivity() {
     }
 
     private fun showErrorDetailsDialog() {
+        val errorInformation = CrashActivity.getAllErrorDetailsFromIntent(this@DefaultErrorActivity, intent)
         val builder = AlertDialog.Builder(this@DefaultErrorActivity)
                 .setTitle(R.string.customactivityoncrash_error_activity_error_details_title)
-                .setMessage(CrashActivity.getAllErrorDetailsFromIntent(this@DefaultErrorActivity, intent))
+                .setMessage(errorInformation)
                 .setPositiveButton(R.string.customactivityoncrash_error_activity_error_details_close, null)
 
         if (config.isShowCopyButtonInDetails) {
             val copyText = config.copyButtonText
                     ?: getString(R.string.customactivityoncrash_error_activity_error_details_copy)
-            builder.setNeutralButton(copyText) { _, _ -> copyErrorToClipboard() }
+            builder.setNeutralButton(copyText) { _, _ -> copyErrorToClipboard(errorInformation) }
         }
 
         val dialog = builder.show()
+        detailsDialog = dialog
         val textView: TextView? = dialog.findViewById(android.R.id.message)
         if (textView != null) {
             textView.setTextSize(
@@ -255,8 +260,7 @@ class DefaultErrorActivity : AppCompatActivity() {
         }
     }
 
-    private fun copyErrorToClipboard() {
-        val errorInformation = CrashActivity.getAllErrorDetailsFromIntent(this@DefaultErrorActivity, intent)
+    private fun copyErrorToClipboard(errorInformation: String) {
         val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager?
 
         if (clipboard != null) {
@@ -293,7 +297,7 @@ class DefaultErrorActivity : AppCompatActivity() {
         try {
             startActivity(Intent.createChooser(sendIntent, chooserTitle))
         } catch (e: ActivityNotFoundException) {
-            copyErrorToClipboard()
+            copyErrorToClipboard(errorInformation)
             Toast.makeText(this, R.string.xtcrash_no_share_app_found, Toast.LENGTH_SHORT).show()
         }
     }

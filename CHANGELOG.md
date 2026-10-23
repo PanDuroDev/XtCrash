@@ -23,6 +23,7 @@
 ### Fixed
 
 - The default error screen now re-processes the intent when the platform re-delivers it (`onNewIntent`, reachable because the screen is `launchMode="singleTask"` and its process can stay cached between crashes): a second crash landing on a live instance updates the screen to the new crash and re-logs the restart-time trace instead of leaving the previous crash's data.
+- Dismiss an open details dialog when a new crash arrives. The dialog text and Copy action now share the same crash-details snapshot.
 
 # CrashX v7.0.1
 
