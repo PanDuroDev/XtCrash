@@ -216,7 +216,7 @@ object CrashActivity {
         }
 
         if (config.isShowRestartButton && config.restartActivityClass == null) {
-            config.restartActivityClass = guessRestartActivityClass(app)
+            config.restartActivityClass = guessRestartActivityClass(app, config)
         }
 
         intent.putExtra(EXTRA_CONFIG, config)
@@ -452,7 +452,7 @@ object CrashActivity {
     fun restartApplication(activity: Activity, crashConfig: CrashConfig) {
         var restartActivityClass: Class<out Activity>? = crashConfig.restartActivityClass
         if (restartActivityClass == null) {
-            restartActivityClass = guessRestartActivityClass(activity.applicationContext)
+            restartActivityClass = guessRestartActivityClass(activity.applicationContext, crashConfig)
         }
 
         if (restartActivityClass == null) {
@@ -591,15 +591,15 @@ object CrashActivity {
         return first.uppercaseChar() + value.substring(1)
     }
 
-    private fun guessRestartActivityClass(context: Context): Class<out Activity>? {
-        var resolvedActivityClass: Class<out Activity>? = getRestartActivityClassWithIntentFilter(context)
+    private fun guessRestartActivityClass(context: Context, crashConfig: CrashConfig): Class<out Activity>? {
+        var resolvedActivityClass: Class<out Activity>? = getRestartActivityClassWithIntentFilter(context, crashConfig)
         if (resolvedActivityClass == null) {
-            resolvedActivityClass = getLauncherActivity(context)
+            resolvedActivityClass = getLauncherActivity(context, crashConfig)
         }
         return resolvedActivityClass
     }
 
-    private fun getRestartActivityClassWithIntentFilter(context: Context): Class<out Activity>? {
+    private fun getRestartActivityClassWithIntentFilter(context: Context, crashConfig: CrashConfig): Class<out Activity>? {
         val searchedIntent = Intent().setAction(INTENT_ACTION_RESTART_ACTIVITY).setPackage(context.packageName)
         val resolveInfos = context.packageManager.queryIntentActivities(
                 searchedIntent,
@@ -612,13 +612,13 @@ object CrashActivity {
                 @Suppress("UNCHECKED_CAST")
                 return Class.forName(resolveInfo.activityInfo.name) as Class<out Activity>
             } catch (e: ClassNotFoundException) {
-                reportLog(Log.ERROR, "Failed to resolve restart activity class from intent filter.", e)
+                reportLog(crashConfig, Log.ERROR, "Failed to resolve restart activity class from intent filter.", e)
             }
         }
         return null
     }
 
-    private fun getLauncherActivity(context: Context): Class<out Activity>? {
+    private fun getLauncherActivity(context: Context, crashConfig: CrashConfig): Class<out Activity>? {
         val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
         val component = intent?.component
         if (intent != null && component != null) {
@@ -626,7 +626,7 @@ object CrashActivity {
                 @Suppress("UNCHECKED_CAST")
                 return Class.forName(component.className) as Class<out Activity>
             } catch (e: ClassNotFoundException) {
-                reportLog(Log.ERROR, "Failed to resolve launcher activity class.", e)
+                reportLog(crashConfig, Log.ERROR, "Failed to resolve launcher activity class.", e)
             }
         }
         return null
