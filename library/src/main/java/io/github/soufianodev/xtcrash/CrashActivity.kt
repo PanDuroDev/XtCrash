@@ -77,7 +77,17 @@ object CrashActivity {
                           priority: Int,
                           message: String,
                           throwable: Throwable? = null) {
-        crashConfig?.logListener?.onCrashLog(priority, TAG, message, throwable)
+        // A failing sink must never escape into crash handling or install; logcat
+        // delivery still happens whether or not the sink works.
+        crashConfig?.logListener?.let { sink ->
+            try {
+                sink.onCrashLog(priority, TAG, message, throwable)
+            } catch (sinkError: Throwable) {
+                if (crashConfig.isLoggingEnabled) {
+                    Log.e(TAG, "XtCrash log listener failed to deliver a diagnostic event.", sinkError)
+                }
+            }
+        }
         if (crashConfig?.isLoggingEnabled == true) {
             when (priority) {
                 Log.INFO -> Log.i(TAG, message, throwable)
