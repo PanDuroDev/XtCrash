@@ -313,16 +313,19 @@ Custom features are serialized through intents (config, event listener). If your
 
 ## Documentation
 
-Extended documentation lives in `docs/` as Docusaurus-ready MDX pages:
+Extended documentation is served by the Astro Starlight site in `docs/`, built
+and published by the GitHub Pages workflow at
+[https://soufianodev.github.io/XtCrash/](https://soufianodev.github.io/XtCrash/).
+The Markdown sources live in `docs/src/content/docs/`.
 
 | Page | Covers |
 |---|---|
-| [Introduction](docs/introduction.mdx) | What the library does, artifact map, non-goals |
-| [Quick Start](docs/quickstart.mdx) | Install, configure, first test crash |
-| [Configuration](docs/configuration.mdx) | Complete `CrashConfig` reference |
-| [Custom Error Screen](docs/custom-error-screen.mdx) | Subclass, manifest entry, intent helpers |
-| [Compose](docs/compose.mdx) | Drop-in activity, composable screen, custom designs |
-| [Material 3 Theming](docs/material-3-theming.mdx) | Config colors mapped to M3 color roles |
+| [Introduction](https://soufianodev.github.io/XtCrash/introduction/) | What the library does, artifact map, non-goals |
+| [Quick Start](https://soufianodev.github.io/XtCrash/quickstart/) | Install, configure, first test crash |
+| [Configuration](https://soufianodev.github.io/XtCrash/configuration/) | Complete `CrashConfig` reference |
+| [Custom Error Screen](https://soufianodev.github.io/XtCrash/custom-error-screen/) | Subclass, manifest entry, intent helpers |
+| [Compose](https://soufianodev.github.io/XtCrash/compose/) | Drop-in activity, composable screen, custom designs |
+| [Material 3 Theming](https://soufianodev.github.io/XtCrash/material-3-theming/) | Config colors mapped to M3 color roles |
 
 ## Architecture
 

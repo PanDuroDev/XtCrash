@@ -1,0 +1,39 @@
+/*
+ * XtCrash documentation theme: charcoal surfaces, teal-green accent.
+ * Overrides the official `--sl-color-*` custom properties from Starlight's
+ * props.css; unlayered CSS takes precedence over the `starlight` layer.
+ */
+
+:root {
+	/* Neutral grays retinted from slate-blue to cool green-gray charcoal. */
+	--sl-color-gray-1: hsl(170, 12%, 94%);
+	--sl-color-gray-2: hsl(170, 6%, 76%);
+	--sl-color-gray-3: hsl(170, 5%, 58%);
+	--sl-color-gray-4: hsl(170, 6%, 37%);
+	--sl-color-gray-5: hsl(170, 8%, 24%);
+	--sl-color-gray-6: hsl(170, 9%, 16%);
+	--sl-color-black: hsl(170, 10%, 9%);
+
+	/* Teal-green accent (was Starlight's default blue, hue 224). */
+	--sl-color-accent-low: hsl(166, 45%, 17%);
+	--sl-color-accent: hsl(166, 70%, 62%);
+	--sl-color-accent-high: hsl(166, 75%, 80%);
+
+	--sl-color-backdrop-overlay: hsla(170, 10%, 10%, 0.66);
+}
+
+:root[data-theme='light'] {
+	/* Soft green-tinted paper instead of pure white. */
+	--sl-color-gray-1: hsl(170, 15%, 14%);
+	--sl-color-gray-2: hsl(170, 11%, 25%);
+	--sl-color-gray-3: hsl(170, 8%, 37%);
+	--sl-color-gray-4: hsl(170, 7%, 55%);
+	--sl-color-gray-5: hsl(170, 7%, 72%);
+	--sl-color-gray-6: hsl(170, 12%, 90%);
+	--sl-color-gray-7: hsl(170, 14%, 95%);
+	--sl-color-black: hsl(170, 16%, 96%);
+
+	--sl-color-accent-high: hsl(166, 75%, 24%);
+	--sl-color-accent: hsl(166, 85%, 33%);
+	--sl-color-accent-low: hsl(166, 60%, 88%);
+}
