@@ -38,3 +38,24 @@
 	--sl-color-accent: hsl(263, 67%, 51%);      /* #6D28D9 links on light */
 	--sl-color-accent-low: hsl(255, 80%, 95%);  /* #EDE9FE soft violet */
 }
+
+/*
+ * Accessibility hygiene (2026 best practice): a visible focus indicator and
+ * respect for the reduced-motion preference. Starlight ships a skip link by
+ * default; these rules cover the rest.
+ */
+:root *:focus-visible {
+	outline: 2px solid var(--sl-color-accent);
+	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
