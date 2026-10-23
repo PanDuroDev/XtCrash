@@ -103,3 +103,47 @@ fun MyAppCrashScreen(config: CrashConfig) {
   BOM alignment is required for the shipped activity.
 - Both shipped screens receive the same serializable payload as the XML screen;
   switching between them is a config-only change.
+
+## Preview
+
+`XtCrashErrorScreen` is a normal composable, so it previews with any config you
+build in the preview source set. Keep the preview data synthetic — never ship
+real crash text in previews.
+
+```kotlin
+@Preview(showBackground = true)
+@Composable
+fun XtCrashPreview() {
+    val config = CrashConfig.Builder.create()
+        .errorTitle("Preview crash")
+        .errorMessage("This is a preview, not a real crash.")
+        .showRestartButton(true)
+        .showCloseButton(true)
+        .showErrorDetails(true)
+        .apply() // apply() is process-global; fine in a preview process
+    XtCrashErrorScreen(
+        config = config,
+        errorDetails = "java.lang.IllegalStateException: preview\n\tat ...",
+        crashId = "XTCRASH-PREVIEW",
+    )
+}
+```
+
+## Theming
+
+`XtCrashErrorScreen` does not read `MaterialTheme` — it reads the colors from
+`CrashConfig`, so the screen stays consistent with the XML screen and survives
+process death. Bridge your design tokens once, where you build the config:
+
+```kotlin
+CrashConfig.Builder.create()
+    .backgroundColor(MaterialTheme.colorScheme.background.toArgb())
+    .cardBackgroundColor(MaterialTheme.colorScheme.surface.toArgb())
+    .primaryButtonColor(MaterialTheme.colorScheme.primary.toArgb())
+    .titleTextColor(MaterialTheme.colorScheme.onSurface.toArgb())
+    .messageTextColor(MaterialTheme.colorScheme.onSurfaceVariant.toArgb())
+    .apply()
+```
+
+Restart and close still go through `CrashActivity.restartApplication(...)` and
+`closeApplication(...)` so the config's restart intent and close policy apply.
