@@ -79,8 +79,8 @@ class ComposeCrashActivity : ComponentActivity() {
 @Composable
 fun MyAppCrashScreen(config: CrashConfig) {
     val activity = LocalContext.current as? Activity ?: return
-    // Your UI, your styling — config colors and labels are optional. Restart and close
-    // stay library calls so the config's restart intent and close policy are applied:
+    // Your UI, your styling — config colors and labels are optional.
+    // Use the library helpers to restart or close the app:
     Column {
         Button(onClick = { CrashActivity.restartApplication(activity, config) }) { Text("Restart") }
         Button(onClick = { CrashActivity.closeApplication(activity, config) }) { Text("Close") }
@@ -108,7 +108,8 @@ fun MyAppCrashScreen(config: CrashConfig) {
 
 `XtCrashErrorScreen` is a normal composable, so it previews with any config you
 build in the preview source set. Keep the preview data synthetic — never ship
-real crash text in previews.
+real crash text in previews. Replace `MainActivity` with your app's launcher
+activity; a non-null restart activity is required to show the Restart button.
 
 ```kotlin
 @Preview(showBackground = true)
@@ -118,6 +119,7 @@ fun XtCrashPreview() {
         .errorTitle("Preview crash")
         .errorMessage("This is a preview, not a real crash.")
         .showRestartButton(true)
+        .restartActivity(MainActivity::class.java)
         .showCloseButton(true)
         .showErrorDetails(true)
         .get()
@@ -165,5 +167,8 @@ fun ConfigureCrashTheme() {
 }
 ```
 
-Restart and close still go through `CrashActivity.restartApplication(...)` and
-`closeApplication(...)` so the config's restart intent and close policy apply.
+`CrashActivity.restartApplication(...)` creates an intent for the configured
+restart activity, falling back to a target looked up from the manifest, then
+finishes the current activity, starts the restart activity, and kills the current
+process. If no restart activity is found, it calls `closeApplication(...)`, which
+finishes the current activity and kills the current process.

@@ -10,6 +10,7 @@
 
 ### Fixed
 
+- Corrected the Compose documentation's preview restart target and restart/close helper descriptions.
 - Listener validation now rejects a non-serializable superclass without an accessible no-argument constructor before the crash config is sent to the error process.
 
 ### Changed
