@@ -22,6 +22,8 @@ error activity's intent.
 | `trackActivities` | Boolean | `false` | Records an activity lifecycle log before the crash, capped at `maxActivityLogEntries` |
 | `minTimeBetweenCrashesMs` | Int | `3000` | Crash-loop guard: repeated crashes inside this window are not shown again |
 | `logErrorOnRestart` | Boolean | `true` | Logs the previous stack trace again when the error screen opens, so logcat shows it from the error process |
+| `loggingEnabled` | Boolean | `false` | Opt-in logcat output for the library's own install and crash messages; the library is silent by default |
+| `logListener` | `CrashLogListener` | `null` | Optional sink feeding the same messages into your own logging framework |
 | `errorTitle` | String | `"Something went wrong"` | Screen title |
 | `errorMessage` | String | `"The app ran into an unexpected problem. You can restart the app or send a crash report."` | Screen message |
 | `showReportButton` | Boolean | `false` | Report/share button; combine with `supportEmail()` |
@@ -93,12 +95,55 @@ without re-listing every option.
 When the config is applied, the core validates the custom error activity:
 
 - The activity class must appear in the **merged manifest** — a class your
-  manifest does not declare triggers a build-time-style warning in logcat
-  (tag `XtCrash`), not a blow-up during the crash.
+  manifest does not declare triggers a configure-time warning (tag `XtCrash`)
+  delivered through the logging settings in [Logging](#logging), not a blow-up
+  during the crash.
 - The manifest entry should declare its own `android:process`; running the
   error screen in the main process defeats crash recovery for a dead process.
 
 Warnings are logged once per configuration. Fixing the manifest stops them.
+
+## Logging
+
+Logging is opt-in. By default the library writes nothing: no install messages,
+no crash trace, no warnings.
+
+- `loggingEnabled(true)` writes the library's own messages to logcat with tag
+  `XtCrash`, using the standard `android.util.Log` priorities (`INFO`, `WARN`,
+  `ERROR`).
+- `logListener(...)` forwards the same events to the logging framework of your
+  choice; the library passes the data along and does not format, store, or
+  ship it anywhere. Priorities follow `android.util.Log`.
+
+```kotlin
+CrashConfig.Builder.create()
+        .loggingEnabled(true)
+        .apply()
+```
+
+Forward into an existing logger instead:
+
+```kotlin
+CrashConfig.Builder.create()
+        .logListener(ForwardingLogListener())
+        .apply()
+```
+
+```kotlin
+import io.github.soufianodev.xtcrash.log.CrashLogListener
+
+// Must be a top-level or static class: it travels with the serialized config.
+class ForwardingLogListener : CrashLogListener {
+    override fun onCrashLog(priority: Int, tag: String, message: String, throwable: Throwable?) {
+        // e.g. yourLogger.log(priority, tag, message, throwable)
+    }
+}
+```
+
+The listener accepts the standard `android.util.Log` priorities. Both together
+are also allowed. `logErrorOnRestart` remains the gate for the restart-time
+stack trace. To cover install-time messages as well, apply the config before
+the init provider runs, in `Application.attachBaseContext()`.
 
 ## Reading state back
 

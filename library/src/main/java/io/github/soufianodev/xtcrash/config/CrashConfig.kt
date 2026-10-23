@@ -7,6 +7,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.IntDef
 
 import io.github.soufianodev.xtcrash.CrashActivity
+import io.github.soufianodev.xtcrash.log.CrashLogListener
 
 import java.io.Serializable
 import java.lang.reflect.Modifier
@@ -63,6 +64,29 @@ class CrashConfig : Serializable {
     var isShowCloseButton: Boolean = true
 
     var isLogErrorOnRestart: Boolean = true
+
+    /**
+     * Whether XtCrash writes its own lifecycle and crash messages to the Android
+     * logcat. Default: false, because logging is opt-in — developers who want
+     * the library visible in logcat enable it explicitly, and everyone else gets
+     * a silent library.
+     *
+     * Install-time events are logged only when the config is applied before the
+     * init provider runs (configure in `Application.attachBaseContext()`);
+     * later-applied configs still cover every crash-time and error-screen event.
+     */
+    var isLoggingEnabled: Boolean = false
+
+    /**
+     * Optional listener that receives the same diagnostic events that logcat
+     * would receive, so they can enter the developer's own logging framework.
+     * The library only forwards them; it never formats or stores them.
+     *
+     * Independent of [isLoggingEnabled]: both sinks are allowed simultaneously.
+     * Must be a top-level or static class because it is serialized into the
+     * error-screen process.
+     */
+    var logListener: CrashLogListener? = null
 
     var isTrackActivities: Boolean = false
 
@@ -237,6 +261,8 @@ class CrashConfig : Serializable {
                 target.errorActivityClass = source.errorActivityClass
                 target.restartActivityClass = source.restartActivityClass
                 target.eventListener = source.eventListener
+                target.isLoggingEnabled = source.isLoggingEnabled
+                target.logListener = source.logListener
                 target.errorTitle = source.errorTitle
                 target.errorMessage = source.errorMessage
                 target.restartButtonText = source.restartButtonText
@@ -335,6 +361,21 @@ class CrashConfig : Serializable {
                 throw IllegalArgumentException("The event listener cannot be an anonymous or non-static inner class because it must be serialized. Use a top-level class or static inner class.")
             }
             config.eventListener = eventListener
+            return this
+        }
+
+        fun loggingEnabled(isLoggingEnabled: Boolean): Builder {
+            config.isLoggingEnabled = isLoggingEnabled
+            return this
+        }
+
+        fun logListener(logListener: CrashLogListener?): Builder {
+            if (logListener != null
+                    && logListener.javaClass.enclosingClass != null
+                    && !Modifier.isStatic(logListener.javaClass.modifiers)) {
+                throw IllegalArgumentException("The log listener cannot be an anonymous or non-static inner class because it must be serialized. Use a top-level class or static inner class.")
+            }
+            config.logListener = logListener
             return this
         }
 

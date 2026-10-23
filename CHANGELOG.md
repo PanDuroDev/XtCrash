@@ -2,6 +2,7 @@
 
 ### Added
 
+- Opt-in logging (`loggingEnabled()`) for the library's own install and crash messages; optional `CrashLogListener` (`logListener()`) forwards the same events to the developer's own logging framework with standard `android.util.Log` priorities. The library is silent by default.
 - Optional Jetpack Compose artifact (`xtcrash-compose`, resolving as `com.github.SoufianoDev.XtCrash:xtcrash-compose`) with `XtCrashErrorScreen`, a composable crash screen that mirrors the default one.
 - `ComposeErrorActivity` in the `xtcrash-compose` artifact: a hosted, manifest-declared Compose error screen enabled with one config line (`errorActivity(ComposeErrorActivity::class.java)`), no consumer-side crash activity or manifest entry needed.
 - Configure-time validation of custom error activities: when the configured activity is missing from the merged manifest or lacks its own `android:process`, the library logs a warning when the config is applied, instead of failing silently at crash time. All flavors (Java/Kotlin, XML/Compose) benefit.

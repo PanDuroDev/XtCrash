@@ -145,6 +145,8 @@ Core options and their defaults as defined in `CrashConfig`:
 | `trackActivities` | Boolean | `false` | Records an activity lifecycle log before the crash, capped at `maxActivityLogEntries` |
 | `minTimeBetweenCrashesMs` | Int | `3000` | Crash-loop guard: repeated crashes inside this window are not shown again |
 | `logErrorOnRestart` | Boolean | `true` | Logs the previous stack trace again when the error screen opens, so logcat sees it from the error process |
+| `loggingEnabled` | Boolean | `false` | Opt-in logcat output for the library's own install and crash messages; the library is silent by default |
+| `logListener` | `CrashLogListener` | `null` | Optional sink feeding the same messages into your own logging framework |
 | `errorTitle` | String | `"Something went wrong"` | Screen title |
 | `errorMessage` | String | `"The app ran into an unexpected problem. You can restart the app or send a crash report."` | Screen message |
 | `showReportButton` | Boolean | `false` | Report/share button; combine with `supportEmail()` |
@@ -304,6 +306,40 @@ Reports are assembled on device and shared through Android share intents. The li
 Track error-screen flows by implementing `CrashActivity.EventListener`: `onLaunchErrorActivity()`, `onRestartAppFromErrorActivity()`, and `onCloseAppFromErrorActivity()`. Set it with `eventListener()`.
 
 The listener is serialized with the crash config, so anonymous and non-static inner classes are rejected by the builder with an explanation. Use a top-level class or a static inner class.
+
+## Logging
+
+The library is silent by default and owns nothing beyond its own messages; where its diagnostics go is your decision:
+
+- `loggingEnabled(true)` restores the previous logcat output (tag `XtCrash`, `Log.i`/`Log.w`/`Log.e`) for install and crash events.
+- `logListener(...)` receives the same events with the standard `android.util.Log` priorities so they can enter your own framework, such as a file-based logger or `XtLogger`-style pipeline. The library only forwards; it never formats or stores them.
+- Both sinks can be combined. `logErrorOnRestart` stays the gate for the restart-time stack trace.
+
+```kotlin
+CrashConfig.Builder.create()
+        .loggingEnabled(true) // logcat on its own
+        .apply()
+```
+
+or, forwarding into the app's own logger:
+
+```kotlin
+CrashConfig.Builder.create()
+        .logListener(ForwardingLogListener()) // top-level class
+        .apply()
+```
+
+where the listener mirrors the `android.util.Log` signature:
+
+```kotlin
+class ForwardingLogListener : CrashLogListener {
+    override fun onCrashLog(priority: Int, tag: String, message: String, throwable: Throwable?) {
+        // Example hand-off: yourLogger.log(priority, tag, message, throwable)
+    }
+}
+```
+
+The listener is serialized with the crash config (the crash data moves into the `:xtcrash_error` process), so the same top-level/static-class rule as `eventListener()` applies. Configure logging in `Application.attachBaseContext()` if you also want install-time messages.
 
 ## R8 Minification
 
