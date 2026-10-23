@@ -133,16 +133,35 @@ fun XtCrashPreview() {
 
 `XtCrashErrorScreen` does not read `MaterialTheme` — it reads the colors from
 `CrashConfig`, so the screen stays consistent with the XML screen and survives
-process death. Bridge your design tokens once, where you build the config:
+process death. Call this composable inside your app's `MaterialTheme` to capture
+the theme colors. `SideEffect` applies the process-global config after each
+successful composition:
+
+Keep your baseline config in `Application.onCreate()` as shown in the Quick
+Start, including fallback colors for crashes before the first composition.
+This example assumes your app uses Compose Material 3
+(`androidx.compose.material3:material3`).
 
 ```kotlin
-CrashConfig.Builder.create()
-    .backgroundColor(MaterialTheme.colorScheme.background.toArgb())
-    .cardBackgroundColor(MaterialTheme.colorScheme.surface.toArgb())
-    .primaryButtonColor(MaterialTheme.colorScheme.primary.toArgb())
-    .titleTextColor(MaterialTheme.colorScheme.onSurface.toArgb())
-    .messageTextColor(MaterialTheme.colorScheme.onSurfaceVariant.toArgb())
-    .apply()
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.toArgb
+import io.github.soufianodev.xtcrash.config.CrashConfig
+
+@Composable
+fun ConfigureCrashTheme() {
+    val colors = MaterialTheme.colorScheme
+    SideEffect {
+        CrashConfig.Builder.create()
+            .backgroundColor(colors.background.toArgb())
+            .cardBackgroundColor(colors.surface.toArgb())
+            .primaryButtonColor(colors.primary.toArgb())
+            .titleTextColor(colors.onSurface.toArgb())
+            .messageTextColor(colors.onSurfaceVariant.toArgb())
+            .apply()
+    }
+}
 ```
 
 Restart and close still go through `CrashActivity.restartApplication(...)` and
