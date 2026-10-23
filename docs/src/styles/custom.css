@@ -9,7 +9,7 @@
 	/* Slate navy grays taken from the banner's surface tones. */
 	--sl-color-gray-1: hsl(213, 27%, 84%); /* like the banner's light slate text */
 	--sl-color-gray-2: hsl(215, 20%, 65%); /* #94A3B8 tagline text */
-	--sl-color-gray-3: hsl(215, 16%, 47%); /* #64748B */
+	--sl-color-gray-3: hsl(215, 17%, 60%); /* banner slate-500 lifted 47% to 60% for WCAG AA text contrast */
 	--sl-color-gray-4: hsl(217, 19%, 27%);
 	--sl-color-gray-5: hsl(217, 33%, 17%); /* #1E293B rule color */
 	--sl-color-gray-6: hsl(221, 42%, 12%); /* #131B2E banner gradient bottom */
