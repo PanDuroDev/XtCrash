@@ -1,0 +1,57 @@
+---
+title: Introduction
+description: What XtCrash does, how its artifacts map to modules, and what stays out of scope.
+---
+
+# Introduction
+
+XtCrash replaces the Android system crash dialog with a configurable error screen.
+A content provider installs an uncaught-exception handler at app startup; when a
+crash happens, the error screen opens in its own process and lets the user restart,
+close, review technical details, copy them to the clipboard, or share a crash report.
+
+Sources are Kotlin. Every public surface — the fluent `CrashConfig.Builder`, the
+static helpers on `CrashActivity`, and the shipped activities — expects to be
+callable from plain Java projects.
+
+## Artifacts
+
+The repository builds three modules. JitPack resolves the group from the
+repository path, so both artifacts share the same group:
+
+| Artifact | Module | Contents |
+|---|---|---|
+| `xtcrash` | `library/` | Core: handler install, config, default error screen, intent helpers |
+| `xtcrash-compose` | `xtcrash-compose/` | Optional: `ComposeErrorActivity` (drop-in) and `XtCrashErrorScreen` (composable) |
+| `xtcrash-sample` | `xtcrash-sample/` | Demo app; not published, build locally to exercise crash scenarios |
+
+The core artifact carries no Compose dependency. The Compose artifact is strictly
+optional: a core-only project keeps its dependency graph unchanged.
+
+## Lineage
+
+XtCrash descends from [CrashX](https://github.com/TutorialsAndroid/crashx), which
+itself descends from [CustomActivityOnCrash](https://github.com/Ereza/CustomActivityOnCrash)
+by Eduard Ereza Martínez. The chain is recorded in the root `NOTICE` file and the
+README's Attribution section.
+
+## Design properties
+
+- **Process isolation.** The error screen runs in a dedicated `:xtcrash_error`
+  process, so it renders even after the crashing process dies.
+- **Serializable payload.** The config, stack trace, activity log, and crash
+  metadata travel through the launch intent. Nothing is held in memory across
+  process boundaries.
+- **No network.** Reports are assembled on device and shared through Android
+  share intents. The library does not send data anywhere on its own.
+- **Handler-chain friendly.** `initialize XtCrash first, then Crashlytics, ACRA,
+  or another handler` — the provider preserves any previously installed
+  uncaught-exception handler.
+
+## What it does not do
+
+- It does not collect or upload crashes; wire a share target if you want
+  central reporting.
+- It does not catch native (NDK) crashes — only uncaught exceptions on the JVM.
+- It does not replace your analytics; pair it with the `eventListener` callbacks
+  to observe screen flows.

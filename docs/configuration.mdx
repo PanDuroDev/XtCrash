@@ -1,0 +1,108 @@
+---
+title: Configuration
+description: Complete reference for CrashConfig options, defaults, and builder semantics.
+---
+
+# Configuration
+
+All options pass through the fluent builder and end with a single `apply()`
+call, which hands the config to `CrashActivity.setConfig`. The config survives
+process death by serialization — it is bundled with the crash payload into the
+error activity's intent.
+
+## Core options (defined in `CrashConfig`)
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `enabled` | Boolean | `true` | Master switch. Commonly disabled in debug builds |
+| `showErrorDetails` | Boolean | `true` | Shows the technical-details button and dialog |
+| `showRestartButton` | Boolean | `true` | Restart button; restart target is looked up from the manifest when `restartActivity()` is not set |
+| `showCloseButton` | Boolean | `true` | Close button that exits the app |
+| `backgroundMode` | Int | `BACKGROUND_MODE_SHOW_CUSTOM` | `SHOW_CUSTOM` shows the screen on background crashes, `SILENT` closes the app, `CRASH` delegates to the previous handler |
+| `trackActivities` | Boolean | `false` | Records an activity lifecycle log before the crash, capped at `maxActivityLogEntries` |
+| `minTimeBetweenCrashesMs` | Int | `3000` | Crash-loop guard: repeated crashes inside this window are not shown again |
+| `logErrorOnRestart` | Boolean | `true` | Logs the previous stack trace again when the error screen opens, so logcat shows it from the error process |
+| `errorTitle` | String | `"Something went wrong"` | Screen title |
+| `errorMessage` | String | `"The app ran into an unexpected problem. You can restart the app or send a crash report."` | Screen message |
+| `showReportButton` | Boolean | `false` | Report/share button; combine with `supportEmail()` |
+| `showCrashId` | Boolean | `true` | Displays the generated crash ID on the screen |
+| `crashIdPrefix` | String | `"XTCRASH"` | Prefix for generated crash IDs |
+
+Set null strings safely: `errorTitle`, `errorMessage`, `reportButtonText`, and
+`crashIdPrefix` fall back to their defaults when you pass null or an empty string.
+
+## Text labels
+
+Every button label is overridable:
+
+```kotlin
+CrashConfig.Builder.create()
+    .restartButtonText("Reopen app")
+    .closeButtonText("Exit")
+    .detailsButtonText("Technical details")
+    .reportButtonText("Mail this crash")
+    .copyButtonText("Copy details")
+    .apply()
+```
+
+## Colors and icons
+
+Nine color options shape the screen: `backgroundColor()`,
+`cardBackgroundColor()`, `primaryButtonColor()`, `secondaryButtonColor()`,
+`titleTextColor()`, `messageTextColor()`, `buttonTextColor()`,
+`secondaryButtonTextColor()`, and `metaTextColor()` — all `@ColorInt` values.
+Set a custom error icon with `errorDrawable()`. The Material 3 mapping table
+lives on the [Material 3 theming](material-3-theming/#color-role-mapping) page.
+
+Defaults belong to the library's own palette: screen background and primary
+button `#D50000`, card `#FFFFFF`, secondary button `#F3F4F6`, title
+`#111827`, message `#4B5563`, button text `#FFFFFF`, secondary button text
+`#111827`, metadata text `#6B7280`.
+
+## Report behavior
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `supportEmail` | String | null | Turns the share flow into a prepared email draft |
+| `reportSubject` | String | null | Overrides the email subject |
+| `reportChooserTitle` | String | null | Chooser title shown without `supportEmail` |
+| `showCopyButtonInDetails` | Boolean | true | Copy action inside the details dialog |
+| `showAppInfo` | Boolean | true | Shows app/package metadata block on the screen |
+| `additionalReportInfo` | String | null | Extra free-form report text |
+
+Per-item report toggles: `includeDeviceInfo()`, `includeActivityLog()`,
+`includeStackTrace()`, `includeBuildDate()`, `includeCrashId()`. Size caps:
+`maxStackTraceSize()` default `131071`, `maxActivityLogEntries()` default `50`.
+
+## Lifecycle and structure
+
+| Option | Type | Description |
+|---|---|---|
+| `errorActivity` | Class | Your custom error activity; see the [custom screen page](custom-error-screen/) |
+| `restartActivity` | Class | Alternate restart target; defaults to the launcher activity from the manifest |
+| `eventListener` | CrashActivity.EventListener | `onLaunchErrorActivity()`, `onRestartAppFromErrorActivity()`, `onCloseAppFromErrorActivity()` |
+
+## Builder semantics
+
+`CrashConfig.Builder.create()` starts from a **copy of the current config**, not
+from factory defaults. Sequential `apply()` calls therefore keep previously
+applied settings unless overwritten — distribute configuration across code paths
+without re-listing every option.
+
+## Configure-time validation
+
+When the config is applied, the core validates the custom error activity:
+
+- The activity class must appear in the **merged manifest** — a class your
+  manifest does not declare triggers a build-time-style warning in logcat
+  (tag `XtCrash`), not a blow-up during the crash.
+- The manifest entry should declare its own `android:process`; running the
+  error screen in the main process defeats crash recovery for a dead process.
+
+Warnings are logged once per configuration. Fixing the manifest stops them.
+
+## Reading state back
+
+Every field on `CrashConfig` is a public mutable property. Screens render from
+the config object they receive in the intent, so the same source of truth
+drives the default XML screen, `XtCrashErrorScreen`, and your own UI.

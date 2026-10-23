@@ -1,0 +1,136 @@
+---
+title: Quick Start
+description: Install the artifacts, configure once, force a test crash.
+---
+
+# Quick Start
+
+## Requirements
+
+- Android API 23 or newer (`minSdk 23`)
+- The Kotlin standard library ships transitively in the POM, so Java-only consumers
+  need no Kotlin plugin
+- To build from source: JDK 21, Android SDK with `compileSdk 37`, the bundled
+  Gradle 9.4.1 wrapper, AGP 9.2.1
+
+## Install
+
+JitPack resolves the group from the repository path, so the group
+`com.github.SoufianoDev.XtCrash` mirrors the GitHub URL rather than the artifact
+name. Artifacts are `xtcrash` (core) and `xtcrash-compose` (optional Compose
+screen), independent of the module directories.
+
+Release coordinates follow the `v1.0.0` tag once it exists on the repository; no
+tag has been published yet. Confirm the exact resolved names on JitPack's list at
+`https://jitpack.io/#com.github.SoufianoDev/XtCrash/1.0.0` after tagging.
+
+Add the repository in your root `settings.gradle.kts`:
+
+```kotlin
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = uri("https://jitpack.io") }
+    }
+}
+```
+
+Add the dependency in your app module:
+
+```kotlin
+dependencies {
+    implementation("com.github.SoufianoDev.XtCrash:xtcrash:v1.0.0")
+}
+```
+
+Groovy DSL:
+
+```groovy
+dependencies {
+    implementation 'com.github.SoufianoDev.XtCrash:xtcrash:v1.0.0'
+}
+```
+
+## No manifest step for the basics
+
+`CrashInitProvider` is declared inside the library manifest. It runs as a content
+provider at app startup and installs the uncaught-exception handler before
+`Application.onCreate()`. You install nothing by hand.
+
+## Configure once
+
+In your `Application` subclass:
+
+```kotlin
+class MyApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        CrashConfig.Builder.create()
+            .enabled(true)
+            .showErrorDetails(true)
+            .trackActivities(true)
+            .showReportButton(true)
+            .supportEmail("support@example.com")
+            .apply()
+    }
+}
+```
+
+Java equivalent:
+
+```java
+public class MyApplication extends Application {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        CrashConfig.Builder.create()
+                .enabled(true)
+                .showErrorDetails(true)
+                .trackActivities(true)
+                .showReportButton(true)
+                .supportEmail("support@example.com")
+                .apply();
+    }
+}
+```
+
+Imports:
+
+```kotlin
+import io.github.soufianodev.xtcrash.CrashActivity
+import io.github.soufianodev.xtcrash.config.CrashConfig
+```
+
+Automatically applied options with no explicit setting: `true` for
+`enabled`, `showErrorDetails`, `showRestartButton`, `showCloseButton`,
+`logErrorOnRestart`, and `showCrashId`; `false` for `trackActivities` and
+`showReportButton`; `3000` ms crash-loop window; crash IDs prefixed `XTCRASH`.
+
+## Test
+
+```kotlin
+throw RuntimeException("Test crash")
+```
+
+The configured error screen opens in the `:xtcrash_error` process. Its details
+dialog carries the crash ID, timestamp, stack trace, and — with
+`trackActivities(true)` — the activity lifecycle log captured before the crash.
+
+## Compose apps
+
+For a Compose-rendered crash screen, add the optional artifact and point the
+config at the hosted activity:
+
+```kotlin
+implementation("com.github.SoufianoDev.XtCrash:xtcrash-compose:v1.0.0") // same tag as the core
+```
+
+```kotlin
+CrashConfig.Builder.create()
+    .errorActivity(ComposeErrorActivity::class.java)
+    .apply()
+```
+
+No manifest entry is needed. Full options live on the Compose page.
