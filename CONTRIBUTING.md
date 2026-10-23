@@ -119,7 +119,7 @@ Include:
 4. Steps to reproduce; a minimal snippet is best.
 
 Security-sensitive reports go by email instead of the public tracker:
-`contact@crashx.dev`.
+`contact.devsoufiano@gmail.com`.
 
 ## Versioning and Releases
 
