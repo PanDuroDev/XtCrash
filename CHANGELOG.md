@@ -20,6 +20,10 @@
 - The public API is unchanged; Java consumers compile against the same classes, getters and builder methods as before.
 - AGP 9 built-in Kotlin support compiles the new sources, no extra Kotlin plugin or version pinning added.
 
+### Fixed
+
+- The default error screen now re-processes the intent when the platform re-delivers it (`onNewIntent`, reachable because the screen is `launchMode="singleTask"` and its process can stay cached between crashes): a second crash landing on a live instance updates the screen to the new crash and re-logs the restart-time trace instead of leaving the previous crash's data.
+
 # CrashX v7.0.1
 
 CrashX v7.0.1 is a major transparency, maintenance, and modernization release.

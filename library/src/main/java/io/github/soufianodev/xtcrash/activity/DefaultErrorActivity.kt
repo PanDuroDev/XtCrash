@@ -50,6 +50,29 @@ class DefaultErrorActivity : AppCompatActivity() {
 
         setContentView(R.layout.crash_default_error_activity)
 
+        renderCrash()
+    }
+
+    /**
+     * Re-delivers a crash into a live instance. With `launchMode="singleTask"`
+     * the platform routes a repeat launch of this screen through
+     * [onNewIntent] instead of a new instance; without this hook the old
+     * screen would keep showing the previous crash and the restart-time
+     * trace would not be logged again.
+     */
+    // shortcut: an Android 16 device was also seen re-presenting the cached
+    // task with NO callback at all, which this hook cannot catch - that case
+    // keeps showing the previous crash's data. Ceiling: platform intent
+    // delivery; upgrade path if devices reproduce it is taskAffinity or
+    // launch-flag hardening, then a device matrix re-test.
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        config = CrashActivity.getConfigFromIntent(intent)
+        renderCrash()
+    }
+
+    private fun renderCrash() {
         setupWindow()
         setupTextContent()
         setupMetaContent()
