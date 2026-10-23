@@ -46,7 +46,7 @@ one module but breaks another is caught by the three-module build.
 | `library/` | Core artifact: handler, config, default error screen, intent helpers |
 | `xtcrash-compose/` | Optional Compose artifact: `ComposeErrorActivity`, `XtCrashErrorScreen` |
 | `xtcrash-sample/` | Demo app (not published) |
-| `docs/` | MDX documentation pages |
+| `docs/` | Documentation website (Astro Starlight); sources in `docs/src/content/docs/` |
 | `scripts/` | Publish scripts |
 
 ## Pull Request Process
