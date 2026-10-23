@@ -3,8 +3,6 @@ title: Configuration
 description: Complete reference for CrashConfig options, defaults, and builder semantics.
 ---
 
-# Configuration
-
 All options pass through the fluent builder and end with a single `apply()`
 call, which hands the config to `CrashActivity.setConfig`. The config survives
 process death by serialization — it is bundled with the crash payload into the
