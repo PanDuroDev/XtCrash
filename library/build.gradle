@@ -1,29 +1,29 @@
 apply plugin: 'com.android.library'
 apply plugin: 'maven-publish'
-group='com.github.TutorialsAndroid'
+group = 'com.github.SoufianoDev'
 
 ext {
-    PUBLISH_GROUP_ID = 'io.github.tutorialsandroid'
+    PUBLISH_GROUP_ID = 'com.github.SoufianoDev'
     PUBLISH_VERSION = '1.0.0'
-    PUBLISH_ARTIFACT_ID = 'crashx'
-    PUBLISH_DESCRIPTION = 'This library allows launching a crash activity when the app crashes, instead of showing the hated "Unfortunately, X has stopped" dialog.'
-    PUBLISH_URL = 'https://github.com/TutorialsAndroid/crashx'
+    PUBLISH_ARTIFACT_ID = 'xtcrash'
+    PUBLISH_DESCRIPTION = 'Modern crash recovery error screen for Android.'
+    PUBLISH_URL = 'https://github.com/SoufianoDev/XtCrash'
     PUBLISH_LICENSE_NAME = 'Apache License'
     PUBLISH_LICENSE_URL =
-            'https://github.com/TutorialsAndroid/crashx/blob/master/LICENSE'
-    PUBLISH_DEVELOPER_ID = 'tutorialsandroid'
-    PUBLISH_DEVELOPER_NAME = 'Akshay Masram'
-    PUBLISH_DEVELOPER_EMAIL = 'akshaysunilmasram@yahoo.com'
+            'https://github.com/SoufianoDev/XtCrash/blob/master/LICENSE'
+    PUBLISH_DEVELOPER_ID = 'soufianodev'
+    PUBLISH_DEVELOPER_NAME = 'SoufianoDev'
+    PUBLISH_DEVELOPER_EMAIL = 'contact@crashx.dev'
     PUBLISH_SCM_CONNECTION =
-            'scm:git:github.com/tutorialsandroid/crashx.git'
+            'scm:git:github.com/SoufianoDev/XtCrash.git'
     PUBLISH_SCM_DEVELOPER_CONNECTION =
-            'scm:git:ssh://github.com/tutorialsandroid/crashx.git'
+            'scm:git:ssh://github.com/SoufianoDev/XtCrash.git'
     PUBLISH_SCM_URL =
-            'https://github.com/tutorialsandroid/crashx/tree/master'
+            'https://github.com/SoufianoDev/XtCrash/tree/master'
 }
 
 android {
-    namespace 'com.developer.crashx'
+    namespace 'io.github.soufianodev.xtcrash'
     compileSdk 37
     resourcePrefix 'crash_'
 

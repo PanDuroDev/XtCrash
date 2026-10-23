@@ -1,0 +1,42 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'io.github.soufianodev.xtcrash.sample'
+    compileSdk 37
+
+    defaultConfig {
+        applicationId "io.github.soufianodev.xtcrash.sample"
+        minSdkVersion 23
+        targetSdkVersion 37
+        versionCode 11
+        versionName "1.0.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+
+        debug {
+            minifyEnabled false
+            debuggable true
+        }
+    }
+    buildFeatures {
+        buildConfig true
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+}
+
+dependencies {
+	implementation fileTree(include: ['*.jar'], dir: 'libs')
+
+    //ANDROIDX JETPACK LIBRARIES
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+	
+	//CrashX library
+    implementation project(":library")
+}

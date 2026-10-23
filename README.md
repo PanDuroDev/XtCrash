@@ -39,7 +39,7 @@ XtCrash is built on top of [CrashX](https://github.com/TutorialsAndroid/crashx),
 
 ### JitPack
 
-Resolve coordinates `com.github.SoufianoDev:XtCrash:v1.0.0`. JitPack builds this once the `v1.0.0` tag exists on the repository; no tag has been published yet, so treat the coordinates as ready once tagging happens.
+Resolve coordinates `com.github.SoufianoDev.XtCrash:xtcrash:v1.0.0`. JitPack builds this once the `v1.0.0` tag exists on the repository; no tag has been published yet, so treat the coordinates as ready once tagging happens. Sub-module artifacts follow each module's publish metadata (`xtcrash`, `xtcrash-compose`), independent of directory names.
 
 Add the repository in your root `settings.gradle.kts`:
 
@@ -58,7 +58,7 @@ Add the dependency in your app module:
 
 ```kotlin
 dependencies {
-    implementation("com.github.SoufianoDev:XtCrash:v1.0.0")
+    implementation("com.github.SoufianoDev.XtCrash:xtcrash:v1.0.0")
 }
 ```
 
@@ -66,7 +66,7 @@ Groovy DSL equivalent:
 
 ```gradle
 dependencies {
-    implementation 'com.github.SoufianoDev:XtCrash:v1.0.0'
+    implementation 'com.github.SoufianoDev.XtCrash:xtcrash:v1.0.0'
 }
 ```
 
@@ -119,7 +119,7 @@ public class MyApplication extends Application {
 }
 ```
 
-Imports: `com.developer.crashx.CrashActivity` and `com.developer.crashx.config.CrashConfig`.
+Imports: `io.github.soufianodev.xtcrash.CrashActivity` and `io.github.soufianodev.xtcrash.config.CrashConfig`.
 
 Force a crash to see the error screen:
 
@@ -145,7 +145,7 @@ Core options and their defaults as defined in `CrashConfig`:
 | `errorMessage` | String | `"The app ran into an unexpected problem. You can restart the app or send a crash report."` | Screen message |
 | `showReportButton` | Boolean | `false` | Report/share button; combine with `supportEmail()` |
 | `showCrashId` | Boolean | `true` | Displays the generated crash ID on the screen |
-| `crashIdPrefix` | String | `"CRASHX"` | Prefix for generated crash IDs |
+| `crashIdPrefix` | String | `"XTCRASH"` | Prefix for generated crash IDs |
 
 Advanced options, all set through the same builder: custom labels for every button (`restartButtonText()`, `closeButtonText()`, `detailsButtonText()`, `reportButtonText()`, `copyButtonText()`), nine theme colors (`backgroundColor()`, `cardBackgroundColor()`, `primaryButtonColor()`, `secondaryButtonColor()`, `titleTextColor()`, `messageTextColor()`, `buttonTextColor()`, `secondaryButtonTextColor()`, `metaTextColor()`), a custom error icon (`errorDrawable()`), a custom restart target (`restartActivity()`), report metadata toggles (`includeDeviceInfo()`, `includeActivityLog()`, `includeStackTrace()`, `includeBuildDate()`, `includeCrashId()`), report size limits (`maxStackTraceSize()`, default `131071`, and `maxActivityLogEntries()`, default `50`), and extra report text (`additionalReportInfo()`).
 
@@ -222,13 +222,13 @@ Misconfigurations are flagged at configure time: when the configured activity is
 
 Compose apps are supported out of the box: install, crash catching, tracking and the default screen work unchanged, and the core library carries no Compose dependency.
 
-For a crash screen rendered in Compose, the optional `:compose` artifact provides two levels of use:
+For a crash screen rendered in Compose, the optional `xtcrash-compose` artifact provides two levels of use:
 
 **Drop-in (no code beyond one config line).** The artifact ships `ComposeErrorActivity`, a hosted crash activity in its own dedicated process, ready for any project:
 
 ```kotlin
 dependencies {
-    implementation("com.github.SoufianoDev.XtCrash:compose:1.0.0") // resolves with the same tag as the core
+    implementation("com.github.SoufianoDev.XtCrash:xtcrash-compose:1.0.0") // resolves with the same tag as the core
 }
 ```
 
@@ -310,14 +310,14 @@ Custom features are serialized through intents (config, event listener). If your
 ## Architecture
 
 ```
-library/src/main/java/com/developer/crashx/
+library/src/main/java/io/github/soufianodev/xtcrash/
 ├── CrashActivity.kt              core: install(), config holder, intent helpers, statics
 ├── config/CrashConfig.kt         serializable config + fluent builder
 ├── activity/DefaultErrorActivity.kt   the default crash screen UI
 └── provider/CrashInitProvider.kt      manifest-declared provider, installs the handler at startup
 ```
 
-Flow: the provider installs an uncaught-exception handler, preserving any previously installed one (initialize XtCrash first, then Firebase Crashlytics, ACRA, or another handler, so the chain stays intact). A crash builds the serializable payload, then either launches the error activity or delegates by `backgroundMode`. The error activity runs in a dedicated `:error_activity` process and survives the main process dying. `minTimeBetweenCrashesMs` prevents restart loops.
+Flow: the provider installs an uncaught-exception handler, preserving any previously installed one (initialize XtCrash first, then Firebase Crashlytics, ACRA, or another handler, so the chain stays intact). A crash builds the serializable payload, then either launches the error activity or delegates by `backgroundMode`. The error activity runs in a dedicated `:xtcrash_error` process and survives the main process dying. `minTimeBetweenCrashesMs` prevents restart loops.
 
 ## Attribution
 
