@@ -1,0 +1,160 @@
+package io.github.soufianodev.xtcrash.report.internal
+
+import java.net.URI
+
+/**
+ * Result of building a destination URL: the final encoded URL, the exact byte
+ * budget it consumed, and whether the report body had to be shortened.
+ */
+internal data class BuiltUrl(
+    /** The final encoded destination URL. */
+    val url: String,
+    /** The decoded prefill body [url] carries (empty when none fits). */
+    val body: String,
+    /** True when the report body was shortened to fit the budget. */
+    val shortened: Boolean,
+)
+
+/**
+ * Builds issue-creation URLs entirely inside XtCrash: title formatting, body
+ * formatting, query encoding, and prefill-shortening decisions. Consumers
+ * receive the finished [BuiltUrl.url] and must not rebuild or mutate it.
+ *
+ * <p>The budget is enforced on the complete encoded URL measured in UTF-8
+ * bytes, not on the raw report text, so percent-encoding expansion is
+ * accounted for.</p>
+ */
+internal object IssueUrlBuilder {
+
+    /**
+     * Default conservative budget for the entire encoded URL, in bytes. Both
+     * GitHub and GitLab.com document an 8192-character cap on issue-body
+     * prefill via query parameters; 8000 stays under that with headroom for
+     * encoding overhead. This is a conservative default, not a claim of a
+     * universally verified service limit — self-hosted GitLab deployments vary.
+     */
+    const val DEFAULT_URL_BUDGET_BYTES = 8000
+
+    /** Lower bound a configured budget may not drop below. */
+    const val MIN_URL_BUDGET_BYTES = 512
+
+    /**
+     * Builds a GitHub new-issue URL.
+     *
+     * @param owner repository owner
+     * @param repository repository name
+     * @param title issue title (prefill)
+     * @param blocks prioritized report body blocks
+     * @param budgetBytes total encoded-URL byte budget
+     */
+    fun github(
+        owner: String,
+        repository: String,
+        title: String,
+        blocks: List<PrefillShortener.Block>,
+        budgetBytes: Int,
+    ): BuiltUrl {
+        // GitHub prefills the issue form from `title` and `body` query params.
+        val base = "https://github.com/$owner/$repository/issues/new"
+        return build(base, "title", "body", title, blocks, budgetBytes)
+    }
+
+    /**
+     * Builds a GitLab new-issue URL for an explicit base URL (gitlab.com or a
+     * verified self-hosted instance).
+     *
+     * @param baseUrl instance base URL, e.g. `https://gitlab.com`
+     * @param projectPath namespace-qualified project path, e.g. `group/project`
+     * @param title issue title (prefill)
+     * @param blocks prioritized report body blocks
+     * @param budgetBytes total encoded-URL byte budget
+     */
+    fun gitlab(
+        baseUrl: String,
+        projectPath: String,
+        title: String,
+        blocks: List<PrefillShortener.Block>,
+        budgetBytes: Int,
+    ): BuiltUrl {
+        val trimmedBase = baseUrl.trimEnd('/')
+        val encodedPath = projectPath.trim('/').split('/')
+            .joinToString("/") { encodeSegment(it) }
+        // GitLab prefills from `issue[title]` / `issue[description]` (encoded).
+        val base = "$trimmedBase/$encodedPath/-/issues/new"
+        return build(base, "issue%5Btitle%5D", "issue%5Bdescription%5D", title, blocks, budgetBytes)
+    }
+
+    /**
+     * Builds the destination URL. The description query-parameter name differs
+     * per service (`body` on GitHub, `issue[description]` on GitLab).
+     */
+    private fun build(
+        base: String,
+        titleParam: String,
+        descriptionParam: String,
+        title: String,
+        blocks: List<PrefillShortener.Block>,
+        budgetBytes: Int,
+    ): BuiltUrl {
+        val fixed = base + "?" + titleParam + "=" + encodeValue(title) + "&" + descriptionParam + "="
+        val fixedBytes = PrefillShortener.utf8Bytes(fixed)
+        val bodyBudget = budgetBytes - fixedBytes
+
+        if (bodyBudget <= 0) {
+            // No room for any description; caller falls back to the base page.
+            return BuiltUrl(fixed.trimEnd('&', '?'), body = "", shortened = true)
+        }
+
+        // Cost per block is its percent-encoded size, so the final encoded URL
+        // (fixed prefix + encoded body) is guaranteed to stay within budget.
+        val shortened = PrefillShortener.shorten(blocks, bodyBudget, cost = { encodeValue(it).length })
+        val url = fixed + encodeValue(shortened.body)
+        return BuiltUrl(url, body = shortened.body, shortened = shortened.omittedContent)
+    }
+
+    /** Percent-encodes a query-parameter value (RFC 3986, space as %20). */
+    fun encodeValue(value: String): String {
+        val sb = StringBuilder()
+        for (byte in value.toByteArray(Charsets.UTF_8)) {
+            val b = byte.toInt() and 0xFF
+            val c = b.toChar()
+            val unreserved = (c in 'a'..'z') || (c in 'A'..'Z') || (c in '0'..'9')
+                    || c == '-' || c == '.' || c == '_' || c == '~'
+            if (unreserved) {
+                sb.append(c)
+            } else {
+                sb.append('%')
+                sb.append(HEX[b ushr 4])
+                sb.append(HEX[b and 0x0F])
+            }
+        }
+        return sb.toString()
+    }
+
+    private fun encodeSegment(segment: String): String = encodeValue(segment)
+
+    private const val HEX = "0123456789ABCDEF"
+
+    /**
+     * Clamps a configured budget into the supported range, never letting
+     * configuration bypass the known floor.
+     */
+    fun clampBudget(configured: Int?): Int {
+        val value = configured ?: DEFAULT_URL_BUDGET_BYTES
+        return value.coerceIn(MIN_URL_BUDGET_BYTES, Int.MAX_VALUE)
+    }
+
+    /** Exposed for validation of a configured base URL. */
+    fun isSupportedBaseUrl(baseUrl: String): Boolean {
+        return try {
+            val uri = URI(baseUrl.trimEnd('/'))
+            val scheme = uri.scheme?.lowercase()
+            val host = uri.host
+            val path = uri.path
+            val pathOk = path.isNullOrEmpty() || path == "/"
+            (scheme == "https" || scheme == "http") && !host.isNullOrEmpty() && pathOk
+        } catch (e: Exception) {
+            false
+        }
+    }
+}

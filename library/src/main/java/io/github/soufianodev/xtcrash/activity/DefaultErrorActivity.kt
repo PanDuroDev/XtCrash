@@ -24,6 +24,8 @@ import androidx.core.content.res.ResourcesCompat
 import io.github.soufianodev.xtcrash.CrashActivity
 import io.github.soufianodev.xtcrash.R
 import io.github.soufianodev.xtcrash.config.CrashConfig
+import io.github.soufianodev.xtcrash.report.PreparedReport
+import io.github.soufianodev.xtcrash.report.internal.ReportDispatcher
 
 /**
  * Default XtCrash error screen.
@@ -35,6 +37,8 @@ class DefaultErrorActivity : AppCompatActivity() {
 
     private lateinit var config: CrashConfig
     private var detailsDialog: AlertDialog? = null
+    private var dispatcher: ReportDispatcher? = null
+    private var lastPrepared: PreparedReport? = null
 
     @SuppressLint("PrivateResource")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,6 +54,20 @@ class DefaultErrorActivity : AppCompatActivity() {
         config = CrashActivity.getConfigFromIntent(intent)
 
         setContentView(R.layout.crash_default_error_activity)
+
+        dispatcher = ReportDispatcher(
+                context = this,
+                config = config,
+                canonicalReport = CrashActivity.getAllErrorDetailsFromIntent(this, intent),
+                crashId = CrashActivity.getCrashIdFromIntent(intent),
+                subject = config.reportSubject
+                        ?: getString(R.string.xtcrash_default_report_subject, packageName, CrashActivity.getCrashIdFromIntent(intent)),
+        )
+        dispatcher?.setListener(object : ReportDispatcher.Listener {
+            override fun onReportState(state: ReportDispatcher.ReportState) {
+                renderReportState(state)
+            }
+        })
 
         renderCrash()
     }
@@ -220,10 +238,91 @@ class DefaultErrorActivity : AppCompatActivity() {
         if (config.isShowReportButton) {
             reportButton.visibility = View.VISIBLE
             reportButton.text = requireNotNull(config.reportButtonText)
-            reportButton.setOnClickListener { shareCrashReport() }
+            reportButton.setOnClickListener { dispatcher?.report() }
         } else {
             reportButton.visibility = View.GONE
         }
+    }
+
+    /**
+     * Renders the shared reporting state from [ReportDispatcher]. XML and Compose
+     * consume the same state machine, so their destination behavior, progress
+     * and completion states, configuration errors, clipboard feedback, handler
+     * failure feedback, uncertain-handoff messaging, and explicit fallback
+     * actions stay equivalent.
+     */
+    private fun renderReportState(state: ReportDispatcher.ReportState) {
+        state.prepared?.let { lastPrepared = it }
+
+        // WAITING_USER_ACTION's message is the confirmation-dialog text, so it
+        // must not be toasted on top of the dialog that already shows it.
+        if (state.phase != ReportDispatcher.Phase.WAITING_USER_ACTION) {
+            state.message?.let { message ->
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+            }
+        }
+
+        when (state.phase) {
+            ReportDispatcher.Phase.WAITING_USER_ACTION -> {
+                val prepared = state.prepared ?: return
+                val destinationLabel = if (prepared.destination == io.github.soufianodev.xtcrash.report.ReportDestination.GITHUB) "GitHub" else "GitLab"
+                AlertDialog.Builder(this)
+                        .setTitle(getString(R.string.xtcrash_report_url_privacy_title, destinationLabel))
+                        .setMessage(state.message ?: "")
+                        .setPositiveButton(R.string.xtcrash_report_url_continue) { _, _ ->
+                            dispatcher?.openConfirmedWebUrl(prepared)
+                        }
+                        .setNegativeButton(R.string.xtcrash_report_url_cancel) { _, _ ->
+                            dispatcher?.cancelPending()
+                        }
+                        .setOnCancelListener { dispatcher?.cancelPending() }
+                        .show()
+            }
+            ReportDispatcher.Phase.FALLBACK_AVAILABLE, ReportDispatcher.Phase.CONFIG_INVALID, ReportDispatcher.Phase.UNKNOWN -> {
+                if (state.fallbackAvailable) {
+                    offerExplicitFallback()
+                }
+            }
+            else -> Unit
+        }
+    }
+
+    /**
+     * Explicit user-selected fallback: bypasses the report-action handler and
+     * custom sender, using the safe destination-specific action instead.
+     */
+    private fun offerExplicitFallback() {
+        val destination = config.reportDestination
+        val builder = AlertDialog.Builder(this)
+                .setTitle(R.string.customactivityoncrash_error_activity_error_details_title)
+
+        when (destination) {
+            io.github.soufianodev.xtcrash.report.ReportDestination.GITHUB,
+            io.github.soufianodev.xtcrash.report.ReportDestination.GITLAB -> {
+                builder.setMessage(R.string.xtcrash_report_manual_paste)
+                        .setPositiveButton(R.string.xtcrash_report_open_issue) { _, _ ->
+                            lastPrepared?.let { dispatcher?.openConfirmedWebUrl(it) }
+                        }
+                        .setNeutralButton(R.string.xtcrash_report_copy) { _, _ ->
+                            copyErrorToClipboard(CrashActivity.getAllErrorDetailsFromIntent(this, intent))
+                        }
+            }
+            io.github.soufianodev.xtcrash.report.ReportDestination.EMAIL -> {
+                builder.setMessage(R.string.xtcrash_report_email_no_client)
+                        .setNeutralButton(R.string.xtcrash_report_copy) { _, _ ->
+                            copyErrorToClipboard(CrashActivity.getAllErrorDetailsFromIntent(this, intent))
+                        }
+            }
+            else -> {
+                builder.setMessage(R.string.xtcrash_report_copy_and_share)
+                        .setNeutralButton(R.string.xtcrash_report_copy) { _, _ ->
+                            copyErrorToClipboard(CrashActivity.getAllErrorDetailsFromIntent(this, intent))
+                        }
+            }
+        }
+
+        builder.setNegativeButton(R.string.customactivityoncrash_error_activity_error_details_close, null)
+                .show()
     }
 
     private fun tintPrimaryButton(button: Button) {
@@ -274,31 +373,9 @@ class DefaultErrorActivity : AppCompatActivity() {
                     R.string.customactivityoncrash_error_activity_error_details_copied,
                     Toast.LENGTH_SHORT
             ).show()
-        }
-    }
-
-    private fun shareCrashReport() {
-        val errorInformation = CrashActivity.getAllErrorDetailsFromIntent(this@DefaultErrorActivity, intent)
-        val subject = config.reportSubject
-                ?: getString(R.string.xtcrash_default_report_subject, packageName, CrashActivity.getCrashIdFromIntent(intent))
-        val chooserTitle = config.reportChooserTitle
-                ?: requireNotNull(config.reportButtonText)
-
-        val sendIntent = Intent(Intent.ACTION_SEND)
-        sendIntent.type = "text/plain"
-        sendIntent.putExtra(Intent.EXTRA_SUBJECT, subject)
-        sendIntent.putExtra(Intent.EXTRA_TEXT, errorInformation)
-
-        val supportEmail = config.supportEmail
-        if (supportEmail != null) {
-            sendIntent.putExtra(Intent.EXTRA_EMAIL, arrayOf(supportEmail))
-        }
-
-        try {
-            startActivity(Intent.createChooser(sendIntent, chooserTitle))
-        } catch (e: ActivityNotFoundException) {
-            copyErrorToClipboard(errorInformation)
-            Toast.makeText(this, R.string.xtcrash_no_share_app_found, Toast.LENGTH_SHORT).show()
+        } else {
+            // Only report success after the clipboard operation actually succeeds.
+            Toast.makeText(this, R.string.xtcrash_report_not_copied, Toast.LENGTH_SHORT).show()
         }
     }
 }
