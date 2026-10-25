@@ -54,9 +54,20 @@ internal object IssueUrlBuilder {
         blocks: List<PrefillShortener.Block>,
         budgetBytes: Int,
     ): BuiltUrl {
+        // The owner and repository are inserted into the path unencoded, so
+        // unsafe characters (?, #, %, /) would redirect the prefill out of the
+        // path; reject them instead of emitting a URL pointing elsewhere.
+        if (!isSafePathComponent(owner) || !isSafePathComponent(repository)) {
+            return BuiltUrl(url = "", body = "", shortened = false)
+        }
         // GitHub prefills the issue form from `title` and `body` query params.
         val base = "https://github.com/$owner/$repository/issues/new"
         return build(base, "title", "body", title, blocks, budgetBytes)
+    }
+
+    /** True for a path component that needs no encoding and cannot escape its segment. */
+    fun isSafePathComponent(value: String): Boolean = value.isNotEmpty() && value.all { c ->
+        c in 'a'..'z' || c in 'A'..'Z' || c in '0'..'9' || c == '-' || c == '.' || c == '_'
     }
 
     /**
@@ -157,7 +168,27 @@ internal object IssueUrlBuilder {
             val host = uri.host
             val path = uri.path
             val pathOk = path.isNullOrEmpty() || path == "/"
+            // A query or fragment would swallow the appended issue path
+            // (e.g. https://host?x=1 + /p/-/issues/new), so bases carrying
+            // one are rejected outright.
             (scheme == "https" || scheme == "http") && !host.isNullOrEmpty() && pathOk
+                    && uri.query == null && uri.fragment == null
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Structural check on a finished URL before it becomes the report's
+     * openable target: a parseable http(s) URL with a host and no fragment,
+     * so a malformed build can only ever degrade to Copy-only fallback.
+     */
+    fun isValidIssueUrl(url: String): Boolean {
+        return try {
+            val uri = URI(url)
+            val scheme = uri.scheme?.lowercase()
+            (scheme == "https" || scheme == "http") && !uri.host.isNullOrEmpty()
+                    && uri.fragment == null
         } catch (e: Exception) {
             false
         }

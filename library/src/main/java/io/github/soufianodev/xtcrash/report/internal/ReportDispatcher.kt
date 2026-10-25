@@ -241,7 +241,9 @@ class ReportDispatcher(
             ReportDestination.GITHUB -> {
                 val owner = config.githubOwner
                 val repo = config.githubRepository
-                if (owner.isNullOrEmpty() || repo.isNullOrEmpty()) {
+                if (owner.isNullOrEmpty() || repo.isNullOrEmpty()
+                        || !IssueUrlBuilder.isSafePathComponent(owner)
+                        || !IssueUrlBuilder.isSafePathComponent(repo)) {
                     context.getString(R.string.xtcrash_report_config_invalid)
                 } else {
                     null
@@ -315,9 +317,11 @@ class ReportDispatcher(
     }
 
     private fun applyBuiltUrl(prepared: PreparedReport, built: BuiltUrl) {
-        // An empty url means no usable issue URL fit the budget (e.g. an
-        // oversized title); leave it unset so the UIs offer Copy only.
-        prepared.url = built.url.ifEmpty { null }
+        // An empty or structurally invalid url (e.g. an oversized title, or a
+        // target that escaped its path) stays unset so the UIs offer Copy
+        // only instead of opening a malformed target.
+        val url = built.url.ifEmpty { null }?.takeIf { IssueUrlBuilder.isValidIssueUrl(it) }
+        prepared.url = url
         prepared.prefillOmitsReport = built.shortened || prefillOmitsUnusableSections
         prefillBody = built.body
     }
@@ -538,9 +542,16 @@ class ReportDispatcher(
         } else {
             context.getString(R.string.xtcrash_report_not_copied)
         }
+        // Validation failures leave currentPrepared null, but the instruction
+        // must still reflect this copy and the configured destination —
+        // never a fresh PreparedReport whose clipboard flag says "not copied".
+        val message = status + "\n\n" + pasteInstruction(
+                copied,
+                prepared?.destination ?: config.reportDestination,
+        )
         emit(requestId, ReportState(
             Phase.FALLBACK_AVAILABLE,
-            message = fallbackMessage(status, prepared ?: PreparedReport()),
+            message = message,
             fallbackAvailable = true,
             prepared = prepared,
         ))
@@ -569,14 +580,18 @@ class ReportDispatcher(
      * Built here once so neither UI reconstructs destination-specific claims.
      */
     private fun fallbackMessage(status: String, prepared: PreparedReport): String {
-        return status + "\n\n" + pasteInstruction(prepared)
+        return status + "\n\n" + pasteInstruction(
+                prepared.reportCopiedToClipboard,
+                prepared.destination,
+        )
     }
 
-    private fun pasteInstruction(prepared: PreparedReport): String = when {
-        !prepared.reportCopiedToClipboard -> context.getString(R.string.xtcrash_report_paste_instruction)
-        prepared.destination == ReportDestination.EMAIL -> context.getString(R.string.xtcrash_report_email_copied)
-        else -> context.getString(R.string.xtcrash_report_manual_paste)
-    }
+    private fun pasteInstruction(copied: Boolean, destination: ReportDestination?): String =
+        when (PasteInstruction.select(copied, destination)) {
+            PasteInstruction.Kind.COPY_THEN_PASTE -> context.getString(R.string.xtcrash_report_paste_instruction)
+            PasteInstruction.Kind.EMAIL_COPIED -> context.getString(R.string.xtcrash_report_email_copied)
+            PasteInstruction.Kind.ISSUE_FORM -> context.getString(R.string.xtcrash_report_manual_paste)
+        }
 
     /** Opens the confirmed web URL. Only reachable via [confirmWebUrl]. */
     private fun openUrl(requestId: String, prepared: PreparedReport) {

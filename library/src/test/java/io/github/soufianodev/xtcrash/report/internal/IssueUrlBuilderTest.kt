@@ -166,4 +166,68 @@ class IssueUrlBuilderTest {
         assertEquals("", built.body)
         assertTrue(built.shortened)
     }
+
+    @Test
+    fun baseUrlWithQueryOrFragmentIsRejected() {
+        // The appended issue path would land inside the query or fragment
+        // instead of the path (https://host?x=1 + /p/-/issues/new).
+        assertFalse(IssueUrlBuilder.isSupportedBaseUrl("https://gitlab.com?x=1"))
+        assertFalse(IssueUrlBuilder.isSupportedBaseUrl("https://gitlab.com/#anchor"))
+        assertFalse(IssueUrlBuilder.isSupportedBaseUrl("https://gitlab.com/?x=1"))
+        assertTrue(IssueUrlBuilder.isSupportedBaseUrl("https://gitlab.com"))
+        assertTrue(IssueUrlBuilder.isSupportedBaseUrl("https://gitlab.example.com:8443"))
+    }
+
+    @Test
+    fun githubRejectsUnsafePathComponents() {
+        // Unencoded components could escape their path segment and move the
+        // prefill into a query or fragment of a different target.
+        val safe = IssueUrlBuilder.github(
+            owner = "some-owner",
+            repository = "some_repo.v2",
+            title = "t",
+            blocks = listOf(block("body")),
+            budgetBytes = IssueUrlBuilder.DEFAULT_URL_BUDGET_BYTES,
+        )
+        assertTrue(safe.url.startsWith("https://github.com/some-owner/some_repo.v2/"))
+
+        for (unsafeOwner in listOf("ow#ner", "ow?ner", "ow/ner", "ow%2Fner", "ow ner", "")) {
+            assertEquals(
+                "owner '$unsafeOwner' must yield no url",
+                "",
+                IssueUrlBuilder.github(
+                    owner = unsafeOwner,
+                    repository = "r",
+                    title = "t",
+                    blocks = listOf(block("body")),
+                    budgetBytes = IssueUrlBuilder.DEFAULT_URL_BUDGET_BYTES,
+                ).url,
+            )
+        }
+        assertEquals(
+            "",
+            IssueUrlBuilder.github(
+                owner = "o",
+                repository = "re#po",
+                title = "t",
+                blocks = listOf(block("body")),
+                budgetBytes = IssueUrlBuilder.DEFAULT_URL_BUDGET_BYTES,
+            ).url,
+        )
+    }
+
+    @Test
+    fun finishedUrlValidationRejectsFragmentsAndMalformedUrls() {
+        assertTrue(IssueUrlBuilder.isValidIssueUrl(
+            "https://github.com/o/r/issues/new?title=t&body=b"))
+        assertTrue(IssueUrlBuilder.isValidIssueUrl(
+            "https://github.com/o/r/issues/new"))
+        // A fragment means content escaped the query and would be dropped by
+        // the browser; malformed or relative inputs must fail to parse.
+        assertFalse(IssueUrlBuilder.isValidIssueUrl(
+            "https://github.com/o/r/issues/new#frag"))
+        assertFalse(IssueUrlBuilder.isValidIssueUrl("https://"))
+        assertFalse(IssueUrlBuilder.isValidIssueUrl("not a url"))
+        assertFalse(IssueUrlBuilder.isValidIssueUrl("/relative/path"))
+    }
 }
