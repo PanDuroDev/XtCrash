@@ -1,11 +1,9 @@
 package io.github.soufianodev.xtcrash.compose
 
 import android.app.Activity
-import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
 import android.widget.Toast
 
 import androidx.compose.foundation.Image
@@ -51,6 +49,10 @@ import androidx.compose.ui.unit.sp
 import io.github.soufianodev.xtcrash.CrashActivity
 import io.github.soufianodev.xtcrash.R
 import io.github.soufianodev.xtcrash.config.CrashConfig
+import io.github.soufianodev.xtcrash.report.PreparedReport
+import io.github.soufianodev.xtcrash.report.ReportDestination
+import io.github.soufianodev.xtcrash.report.ReportSection
+import io.github.soufianodev.xtcrash.report.internal.ReportDispatcher
 
 /**
  * Jetpack Compose crash screen for XtCrash.
@@ -60,12 +62,17 @@ import io.github.soufianodev.xtcrash.config.CrashConfig
  * over. Renders from your own crash activity, pointed to via
  * `CrashConfig.Builder.errorActivity(...)`. Originally derived from
  * CustomActivityOnCrash by Eduard Ereza Martínez.</p>
+ *
+ * <p>Reporting shares the same preparation and dispatch pipeline as the XML screen
+ * ([ReportDispatcher]), so both interfaces stay behaviorally equivalent.</p>
  */
 @Composable
 fun XtCrashErrorScreen(
         config: CrashConfig,
         errorDetails: String,
         crashId: String = "",
+        subject: String? = null,
+        sections: List<ReportSection>? = null,
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
@@ -79,7 +86,44 @@ fun XtCrashErrorScreen(
         }
     }
 
-    var showDetailsDialog by remember { mutableStateOf(false) }
+    // Keyed on every captured crash input: a new payload (e.g. a repeat
+    // singleTask launch via onNewIntent) rebuilds the dispatcher and resets
+    // all dialog state, so no previous crash's report or URL survives.
+    val dispatcher = remember(context, config, errorDetails, crashId, subject, sections) {
+        ReportDispatcher(
+                context = context,
+                config = config,
+                canonicalReport = errorDetails,
+                crashId = crashId,
+                subject = subject ?: CrashActivity.getReportSubject(context, config, crashId),
+                sections = sections,
+        )
+    }
+    var showDetailsDialog by remember(dispatcher) { mutableStateOf(false) }
+    var reportState by remember(dispatcher) { mutableStateOf<ReportDispatcher.ReportState?>(null) }
+    var pendingWeb by remember(dispatcher) { mutableStateOf<ReportDispatcher.ReportState?>(null) }
+
+    androidx.compose.runtime.DisposableEffect(dispatcher) {
+        val listener = object : ReportDispatcher.Listener {
+            override fun onReportState(state: ReportDispatcher.ReportState) {
+                // A message the dialogs render is never also toasted.
+                if (!state.messageShownInDialog) {
+                    state.message?.let { message ->
+                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                    }
+                }
+                if (state.phase == ReportDispatcher.Phase.WAITING_USER_ACTION) {
+                    pendingWeb = state
+                }
+                reportState = state
+            }
+        }
+        dispatcher.setListener(listener)
+        onDispose {
+            dispatcher.invalidate()
+            dispatcher.setListener(null)
+        }
+    }
 
     Box(
             modifier = Modifier
@@ -156,7 +200,7 @@ fun XtCrashErrorScreen(
                                 containerColor = toComposeColor(config.primaryButtonColor),
                                 contentColor = toComposeColor(config.buttonTextColor),
                                 modifier = Modifier.padding(top = 10.dp),
-                                onClick = { context.shareCrashReport(config, errorDetails, crashId) },
+                                onClick = { dispatcher.report() },
                         )
                     }
 
@@ -197,6 +241,61 @@ fun XtCrashErrorScreen(
 
         if (showDetailsDialog) {
             ErrorDetailsDialog(config, errorDetails, onDismiss = { showDetailsDialog = false })
+        }
+
+        pendingWeb?.let { state ->
+            val prepared = state.prepared
+            if (prepared != null) {
+                PrivacyConfirmDialog(
+                        prepared = prepared,
+                        message = state.message ?: "",
+                        onConfirm = {
+                            // Guard on the staging state so a stale dialog cannot
+                            // confirm a newer pending request; confirmWebUrl consumes
+                            // the staged confirmation exactly once.
+                            if (pendingWeb === state) {
+                                pendingWeb = null
+                                dispatcher.confirmWebUrl()
+                            }
+                        },
+                        onDismiss = {
+                            if (pendingWeb === state) {
+                                pendingWeb = null
+                                dispatcher.cancelPending()
+                            }
+                        },
+                )
+            }
+        }
+
+        reportState?.let { state ->
+            val needsFallback = state.phase == ReportDispatcher.Phase.FALLBACK_AVAILABLE
+                    || state.phase == ReportDispatcher.Phase.CONFIG_INVALID
+                    || state.phase == ReportDispatcher.Phase.UNKNOWN
+            if (needsFallback && state.fallbackAvailable) {
+                ExplicitFallbackDialog(
+                        config = config,
+                        prepared = state.prepared,
+                        message = state.message ?: "",
+                        onCopy = {
+                            // Guard on the owning state so a stale dialog
+                            // cannot copy for a superseded request; the
+                            // dispatcher records the result and re-emits a
+                            // truthful message, which also dismisses this
+                            // dialog via reportState.
+                            if (reportState === state) {
+                                dispatcher.copyReportForFallback()
+                            }
+                        },
+                        onOpenIssue = {
+                            if (reportState === state) {
+                                reportState = null
+                                dispatcher.requestWebUrlConfirmation()
+                            }
+                        },
+                        onDismiss = { if (reportState === state) reportState = null },
+                )
+            }
         }
     }
 }
@@ -255,8 +354,94 @@ private fun ErrorDetailsDialog(config: CrashConfig, errorDetails: String, onDism
     )
 }
 
+/**
+ * Pre-navigation privacy confirmation shown before opening a report-bearing web
+ * URL. Report content in query parameters may be transmitted to the destination
+ * before the user submits the issue, so this must appear before navigation.
+ * [message] is the dispatcher-built dialog text, so XML and Compose cannot drift.
+ */
+@Composable
+private fun PrivacyConfirmDialog(
+        prepared: PreparedReport,
+        message: String,
+        onConfirm: () -> Unit,
+        onDismiss: () -> Unit,
+) {
+    val destinationLabel = if (prepared.destination == ReportDestination.GITHUB) "GitHub" else "GitLab"
+    AlertDialog(
+            onDismissRequest = onDismiss,
+            title = {
+                Text(stringResource(R.string.xtcrash_report_url_privacy_title, destinationLabel))
+            },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = 320.dp)) {
+                    Text(message)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = onConfirm) {
+                    Text(stringResource(R.string.xtcrash_report_url_continue))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.xtcrash_report_url_cancel))
+                }
+            },
+    )
+}
+
+/**
+ * Explicit user-selected fallback dialog. Invoked only after an uncertain or
+ * failed handoff, and it bypasses the report-action handler and custom sender.
+ * [message] is the dispatcher-built text, so neither UI reconstructs
+ * destination-specific claims; "Open issue page" only appears when the current
+ * state carries a valid web URL and routes through the shared privacy
+ * confirmation.
+ */
+@Composable
+private fun ExplicitFallbackDialog(
+        config: CrashConfig,
+        prepared: PreparedReport?,
+        message: String,
+        onCopy: () -> Unit,
+        onOpenIssue: () -> Unit,
+        onDismiss: () -> Unit,
+) {
+    val destination = prepared?.destination ?: config.reportDestination
+    val isWeb = destination == ReportDestination.GITHUB || destination == ReportDestination.GITLAB
+    val hasWebUrl = isWeb && prepared?.url != null
+
+    AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text(stringResource(R.string.customactivityoncrash_error_activity_error_details_title)) },
+            text = { Text(message) },
+            confirmButton = {
+                if (hasWebUrl) {
+                    TextButton(onClick = onOpenIssue) {
+                        Text(stringResource(R.string.xtcrash_report_open_issue))
+                    }
+                } else {
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.customactivityoncrash_error_activity_error_details_close))
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onCopy) {
+                    Text(stringResource(R.string.xtcrash_report_copy))
+                }
+            },
+    )
+}
+
 private fun Context.copyErrorToClipboard(errorDetails: String) {
-    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
+    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+    if (clipboard == null) {
+        // Only report success after the clipboard operation actually succeeds.
+        Toast.makeText(this, R.string.xtcrash_report_not_copied, Toast.LENGTH_SHORT).show()
+        return
+    }
 
     clipboard.setPrimaryClip(
             ClipData.newPlainText(
@@ -265,29 +450,6 @@ private fun Context.copyErrorToClipboard(errorDetails: String) {
             )
     )
     Toast.makeText(this, R.string.customactivityoncrash_error_activity_error_details_copied, Toast.LENGTH_SHORT).show()
-}
-
-private fun Context.shareCrashReport(config: CrashConfig, errorDetails: String, crashId: String) {
-    val subject = config.reportSubject
-            ?: getString(R.string.xtcrash_default_report_subject, packageName, crashId)
-    val chooserTitle = requireNotNull(config.reportButtonText)
-
-    val sendIntent = Intent(Intent.ACTION_SEND)
-    sendIntent.type = "text/plain"
-    sendIntent.putExtra(Intent.EXTRA_SUBJECT, subject)
-    sendIntent.putExtra(Intent.EXTRA_TEXT, errorDetails)
-
-    val supportEmail = config.supportEmail
-    if (supportEmail != null) {
-        sendIntent.putExtra(Intent.EXTRA_EMAIL, arrayOf(supportEmail))
-    }
-
-    try {
-        startActivity(Intent.createChooser(sendIntent, chooserTitle))
-    } catch (e: ActivityNotFoundException) {
-        copyErrorToClipboard(errorDetails)
-        Toast.makeText(this, R.string.xtcrash_no_share_app_found, Toast.LENGTH_SHORT).show()
-    }
 }
 
 private fun toComposeColor(value: Int): Color = Color(value.toLong() and 0xFFFFFFFFL)

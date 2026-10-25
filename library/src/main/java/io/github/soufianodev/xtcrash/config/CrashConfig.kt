@@ -8,6 +8,9 @@ import androidx.annotation.IntDef
 
 import io.github.soufianodev.xtcrash.CrashActivity
 import io.github.soufianodev.xtcrash.log.CrashLogListener
+import io.github.soufianodev.xtcrash.report.ReportActionHandler
+import io.github.soufianodev.xtcrash.report.ReportDestination
+import io.github.soufianodev.xtcrash.report.ReportSender
 
 import java.io.Serializable
 import java.lang.reflect.Modifier
@@ -233,6 +236,66 @@ class CrashConfig : Serializable {
     var metaTextColor: Int = 0xFF6B7280.toInt()
 
     /**
+     * The selected report destination, or null for the generic Android
+     * Sharesheet (the pre-existing default). Independent of the report-action
+     * handler and the custom sender.
+     */
+    var reportDestination: ReportDestination? = null
+
+    /** GitHub repository owner. Required when the destination is GITHUB. */
+    var githubOwner: String? = null
+        get() = emptyToNull(field)
+        set(value) {
+            field = emptyToNull(value)
+        }
+
+    /** GitHub repository name. Required when the destination is GITHUB. */
+    var githubRepository: String? = null
+        get() = emptyToNull(field)
+        set(value) {
+            field = emptyToNull(value)
+        }
+
+    /** GitLab instance base URL. Required when the destination is GITLAB. */
+    var gitLabBaseUrl: String? = null
+        get() = emptyToNull(field)
+        set(value) {
+            field = emptyToNull(value)
+        }
+
+    /** GitLab namespace-qualified project path. Required for GITLAB. */
+    var gitLabProjectPath: String? = null
+        get() = emptyToNull(field)
+        set(value) {
+            field = emptyToNull(value)
+        }
+
+    /** Developer-defined sender for the CUSTOM destination. */
+    var reportSender: ReportSender? = null
+
+    /**
+     * Optional handler class that may accept responsibility for a prepared
+     * report. Stored as a class (not an instance) so it can be constructed
+     * process-safely in the error screen process.
+     */
+    var reportActionHandlerClass: Class<out ReportActionHandler>? = null
+
+    /**
+     * Deadline in milliseconds for constructing and invoking the report-action
+     * handler or custom sender on a worker thread.
+     */
+    var reportHandlerTimeoutMs: Int = 5000
+        set(value) {
+            field = value.coerceAtLeast(1)
+        }
+
+    /**
+     * Optional override for the encoded-URL byte budget used when prefilling
+     * GitHub/GitLab issue forms. Null uses the conservative default.
+     */
+    var reportUrlBudgetBytes: Int? = null
+
+    /**
      * Fluent builder for XtCrash configuration.
      */
     class Builder {
@@ -293,6 +356,29 @@ class CrashConfig : Serializable {
                 }
             }
 
+            /**
+             * Validates that a handler class can be constructed in the error
+             * screen process: it must be public with a public no-argument
+             * constructor, so it can be instantiated by reflection there rather
+             * than relying on an instance registered in the original process.
+             */
+            private fun validateHandlerClass(handlerClass: Class<*>) {
+                if (!Modifier.isPublic(handlerClass.modifiers)) {
+                    throw IllegalArgumentException("The report action handler " + handlerClass.name
+                            + " must be public so it can be constructed in the error screen process.")
+                }
+                try {
+                    val constructor = handlerClass.getDeclaredConstructor()
+                    if (!Modifier.isPublic(constructor.modifiers)) {
+                        throw IllegalArgumentException("The report action handler " + handlerClass.name
+                                + " must have a public no-argument constructor so it can be constructed in the error screen process.")
+                    }
+                } catch (e: NoSuchMethodException) {
+                    throw IllegalArgumentException("The report action handler " + handlerClass.name
+                            + " must have a public no-argument constructor so it can be constructed in the error screen process.")
+                }
+            }
+
             @JvmStatic
             fun create(): Builder {
                 val builder = Builder()
@@ -348,6 +434,15 @@ class CrashConfig : Serializable {
                 target.buttonTextColor = source.buttonTextColor
                 target.secondaryButtonTextColor = source.secondaryButtonTextColor
                 target.metaTextColor = source.metaTextColor
+                target.reportDestination = source.reportDestination
+                target.githubOwner = source.githubOwner
+                target.githubRepository = source.githubRepository
+                target.gitLabBaseUrl = source.gitLabBaseUrl
+                target.gitLabProjectPath = source.gitLabProjectPath
+                target.reportSender = source.reportSender
+                target.reportActionHandlerClass = source.reportActionHandlerClass
+                target.reportHandlerTimeoutMs = source.reportHandlerTimeoutMs
+                target.reportUrlBudgetBytes = source.reportUrlBudgetBytes
                 return target
             }
         }
@@ -593,6 +688,100 @@ class CrashConfig : Serializable {
 
         fun metaTextColor(metaTextColor: Int): Builder {
             config.metaTextColor = metaTextColor
+            return this
+        }
+
+        /**
+         * Selects the report destination for the "Send crash report" action.
+         *
+         * <p>A destination must be explicitly supplied; a null value from Java
+         * is rejected immediately with an [IllegalArgumentException]. Clearing a
+         * destination restores the generic Android Sharesheet and does not clear
+         * the handler or custom sender. Selecting or clearing a destination never
+         * enables the report button.</p>
+         */
+        fun reportTo(destination: ReportDestination?): Builder {
+            if (destination == null) {
+                throw IllegalArgumentException("reportTo(destination) requires a non-null ReportDestination. Use clearReportDestination() to remove a selected destination.")
+            }
+            config.reportDestination = destination
+            return this
+        }
+
+        /** Configures the GitHub owner and repository target. */
+        fun githubIssueTarget(owner: String?, repository: String?): Builder {
+            config.githubOwner = owner
+            config.githubRepository = repository
+            return this
+        }
+
+        /** Configures the GitLab project path and instance base URL. */
+        fun gitLabIssueTarget(projectPath: String?, baseUrl: String?): Builder {
+            config.gitLabProjectPath = projectPath
+            config.gitLabBaseUrl = baseUrl
+            return this
+        }
+
+        /** Clears the selected destination, restoring the Sharesheet default. */
+        fun clearReportDestination(): Builder {
+            config.reportDestination = null
+            return this
+        }
+
+        /**
+         * Sets the developer-defined sender used for the CUSTOM destination.
+         * Must be a top-level or static serializable class.
+         */
+        fun reportSender(sender: ReportSender?): Builder {
+            if (sender != null) {
+                if (sender.javaClass.enclosingClass != null
+                        && !Modifier.isStatic(sender.javaClass.modifiers)) {
+                    throw IllegalArgumentException("The report sender cannot be an anonymous or non-static inner class because it must be serialized. Use a top-level class or static inner class.")
+                }
+                checkListenerFields("report sender", sender)
+            }
+            config.reportSender = sender
+            return this
+        }
+
+        /** Clears the custom sender independently of destination and handler. */
+        fun clearReportSender(): Builder {
+            config.reportSender = null
+            return this
+        }
+
+        /**
+         * Sets the optional report-action handler class. The class must be
+         * public with a public no-argument constructor so it can be constructed
+         * in the `:xtcrash_error` process. Clearing it is independent of the
+         * destination and custom sender.
+         */
+        fun reportActionHandler(handlerClass: Class<out ReportActionHandler>?): Builder {
+            if (handlerClass != null) {
+                validateHandlerClass(handlerClass)
+            }
+            config.reportActionHandlerClass = handlerClass
+            return this
+        }
+
+        /** Clears the report-action handler independently. */
+        fun clearReportActionHandler(): Builder {
+            config.reportActionHandlerClass = null
+            return this
+        }
+
+        /** Sets the deadline for handler/sender construction and invocation. */
+        fun reportHandlerTimeout(timeoutMs: Int): Builder {
+            config.reportHandlerTimeoutMs = timeoutMs
+            return this
+        }
+
+        /**
+         * Overrides the encoded-URL byte budget for GitHub/GitLab prefills.
+         * The value is clamped to a safe minimum; it cannot bypass known limits.
+         */
+        fun reportUrlBudgetBytes(budgetBytes: Int?): Builder {
+            config.reportUrlBudgetBytes = budgetBytes
             return this
         }
 

@@ -16,5 +16,24 @@
     <string name="xtcrash_crash_id_format">Crash ID: %1$s</string>
     <string name="xtcrash_version_format">XtCrash v%1$s</string>
     <string name="xtcrash_default_report_subject">Crash report - %1$s - %2$s</string>
+    <string name="xtcrash_default_report_subject_no_id">Crash report - %1$s</string>
     <string name="xtcrash_no_share_app_found">No app found to share the report. Crash details were copied instead.</string>
+    <string name="xtcrash_report_not_copied">Could not copy the report to the clipboard.</string>
+    <string name="xtcrash_report_copied">The full report was copied to the clipboard.</string>
+    <string name="xtcrash_report_no_email_client">No email app found on this device.</string>
+    <string name="xtcrash_report_email_copied">The full report was copied to the clipboard — paste it into an email and send it manually.</string>
+    <string name="xtcrash_report_url_privacy_title">Send report via %1$s?</string>
+    <string name="xtcrash_report_url_privacy_message">The report below will be included in the web address and may be sent to %1$s before you submit the issue. You can edit it before submitting.\n\n%2$s</string>
+    <string name="xtcrash_report_url_continue">Continue</string>
+    <string name="xtcrash_report_url_cancel">Cancel</string>
+    <string name="xtcrash_report_manual_paste">The report was copied to the clipboard. Paste it into the issue form before submitting.</string>
+    <string name="xtcrash_report_manual_paste_not_copied">The report is too long to prefill and could not be copied. Please copy it from the error details screen and paste it into the issue form.</string>
+    <string name="xtcrash_report_paste_instruction">Copy the report, then paste it before submitting.</string>
+    <string name="xtcrash_report_no_browser">No app was found to open the issue page.</string>
+    <string name="xtcrash_report_accepted">Report request queued.</string>
+    <string name="xtcrash_report_unknown">The report handoff outcome is uncertain. Do not retry automatically — use the fallback below if needed.</string>
+    <string name="xtcrash_report_failed">Could not hand off the report. The fallback below is available.</string>
+    <string name="xtcrash_report_config_invalid">Reporting is not configured correctly for this destination. The report is still available to copy or share.</string>
+    <string name="xtcrash_report_open_issue">Open issue page</string>
+    <string name="xtcrash_report_copy">Copy report</string>
 </resources>

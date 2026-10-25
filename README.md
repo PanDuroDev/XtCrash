@@ -301,6 +301,83 @@ The report can include: crash ID, package name, app version, library version (`C
 
 Reports are assembled on device and shared through Android share intents. The library sends nothing on its own.
 
+### Report destinations
+
+By default the button uses the generic Android Sharesheet. `reportTo(...)` selects a specific destination instead. A destination never enables the button by itself — `showReportButton(true)` is still required — and no destination is ever guessed or auto-detected. When no destination is configured, the Sharesheet behavior above is unchanged.
+
+| Destination | Builder call | What happens when the user taps the button |
+|---|---|---|
+| Sharesheet (default) | none | Generic Android Sharesheet, as before |
+| `EMAIL` | `reportTo(ReportDestination.EMAIL)` | `ACTION_SENDTO` with a `mailto:` URI, so only email apps are offered. The recipient is suggested from `supportEmail()`; without one the user picks or enters it. Nothing is ever sent automatically. |
+| `GITHUB` | `reportTo(ReportDestination.GITHUB)` plus `githubIssueTarget(owner, repository)` | Opens the GitHub new-issue form with title and body prefilled |
+| `GITLAB` | `reportTo(ReportDestination.GITLAB)` plus `gitLabIssueTarget(projectPath, baseUrl)` | Opens the GitLab new-issue form with title and description prefilled |
+| `CUSTOM` | `reportTo(ReportDestination.CUSTOM)` plus `reportSender(sender)` | Calls your `ReportSender` implementation |
+
+```kotlin
+CrashConfig.Builder.create()
+        .showReportButton(true)
+        .reportTo(ReportDestination.GITHUB)
+        .githubIssueTarget("your-org", "your-repo")
+        .apply()
+```
+
+`githubIssueTarget` and `gitLabIssueTarget` require explicit values; the library never infers a repository or project from the package name. A missing target is reported as a configuration error at tap time (with the report still available to copy or share), not silently ignored. For self-hosted GitLab, pass the instance root (for example `https://gitlab.example.com`) — a base URL with a path is rejected.
+
+`clearReportDestination()`, `clearReportSender()`, and `clearReportActionHandler()` reset each independently.
+
+### Long reports and URL limits
+
+GitHub and GitLab accept only a limited URL length, so a very long report cannot be carried in the issue URL in full. XtCrash measures the complete percent-encoded URL in bytes (default budget 8000, override with `reportUrlBudgetBytes(n)`; a configured value below 512 is clamped up, so the floor cannot be bypassed) and shortens the *prefill projection* when it does not fit — never the canonical report, which stays complete.
+
+When the prefill had to be shortened, the full report is copied to the clipboard and the confirmation dialog says so. If the clipboard copy fails, the dialog says that too instead of claiming a copy that did not happen. The user pastes the remainder into the issue form manually.
+
+### Privacy confirmation for web destinations
+
+Report content placed in a web URL can be transmitted to GitHub or GitLab before the user submits the issue. For that reason `GITHUB` and `GITLAB` always show a confirmation dialog naming the destination before the browser opens; the dialog shows exactly what the URL will carry. `EMAIL` does not add this step, because `ACTION_SENDTO` opens a draft the user reviews and sends themselves.
+
+### Custom sender
+
+`ReportDestination.CUSTOM` routes the report to your own `ReportSender`:
+
+```kotlin
+class MySender : ReportSender {
+    override fun send(report: PreparedReport): ReportOutcome {
+        // Use report.reportText, report.subject, report.url, report.crashId.
+        return ReportOutcome.ACCEPTED
+    }
+}
+```
+
+The sender runs on a worker thread, bounded by `reportHandlerTimeoutMs` (default 5000 ms). It is invoked with an immutable `PreparedReport` snapshot; the canonical `reportText` is always complete, and `url` carries the exact encoded destination URL when one applies.
+
+### Report action handler
+
+An optional `ReportActionHandler` is offered the prepared report before the destination's normal action runs, letting an integration such as XtMapper accept responsibility for a crash report. It is configured by class rather than instance, because reporting runs in the `:xtcrash_error` process where an instance registered in the original process is not recoverable:
+
+```kotlin
+CrashConfig.Builder.create()
+        .reportActionHandler(MyHandler::class.java)
+        .apply()
+```
+
+The class must be public with a public no-argument constructor; the builder rejects anything else at configure time. Outcomes are interpreted distinctly and none of them ever starts a second flow automatically:
+
+| Outcome | Meaning | What XtCrash does |
+|---|---|---|
+| `ACCEPTED` | Responsibility durably accepted | Stops; shows the accepted message |
+| `NOT_HANDLED` | Declined | Runs the destination's normal action |
+| `FAILED` | Definite failure before anything ran | Stops; offers the fallback |
+| `UNKNOWN` | Uncertain (timeout or mid-flight exception) | Stops; offers the fallback. Never retried automatically, because acceptance may already have happened |
+
+`UNKNOWN` is deliberately terminal: the handler may have accepted the report before failing, so an automatic retry could produce a duplicate.
+
+### Limitations
+
+- A stack trace truncated at capture time by `maxStackTraceSize()` cannot be restored by the report pipeline; the canonical report can only reflect what was captured.
+- Handler and sender deadlines stop XtCrash from *waiting*, but cannot forcibly terminate a worker thread that is already running.
+- URL byte budgets are a conservative default, not a universally verified service limit; self-hosted GitLab deployments vary.
+- Device/emulator behavior (real browser handoff, real email clients, live GitHub/GitLab prefill) is not covered by the unit test suite, which runs on the JVM.
+
 ## Event Listener
 
 Track error-screen flows by implementing `CrashActivity.EventListener`: `onLaunchErrorActivity()`, `onRestartAppFromErrorActivity()`, and `onCloseAppFromErrorActivity()`. Set it with `eventListener()`.
@@ -348,6 +425,12 @@ The listener is serialized with the crash config (the crash data moves into the 
 The AAR ships `library/consumer-rules.pro`, so consuming apps get the keep rules automatically. No app-side configuration is needed for standard usage.
 
 Custom features are serialized through intents (config, event listener). If your app runs aggressive shrinking and you use a custom error activity or event listener, keep those classes in your own rules as well.
+
+A `ReportActionHandler` configured with `reportActionHandler(MyHandler::class.java)` is instantiated by reflection in the `:xtcrash_error` process, so R8 needs to keep it. The class name is referenced only through your config code, which shrinking can rewrite, so add an app-side rule:
+
+```pro
+-keep class com.example.MyHandler { public <init>(); }
+```
 
 ## Documentation
 

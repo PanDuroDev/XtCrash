@@ -16,6 +16,9 @@ import androidx.annotation.RestrictTo
 
 import io.github.soufianodev.xtcrash.activity.DefaultErrorActivity
 import io.github.soufianodev.xtcrash.config.CrashConfig
+import io.github.soufianodev.xtcrash.report.ReportSnapshot
+import io.github.soufianodev.xtcrash.report.internal.CanonicalReport
+import io.github.soufianodev.xtcrash.report.internal.DeviceInfo
 
 import java.io.PrintWriter
 import java.io.Serializable
@@ -28,7 +31,6 @@ import java.util.Date
 import java.util.Deque
 import java.util.Locale
 import java.util.UUID
-import java.util.zip.ZipFile
 
 /**
  * XtCrash runtime crash handler.
@@ -356,63 +358,56 @@ object CrashActivity {
         return crashConfig
     }
 
+    /**
+     * Canonical crash report as one immutable snapshot (full text plus ordered
+     * sections), built once by [CanonicalReport] so display and report
+     * dispatch consume identical content. Prefer this over
+     * [getAllErrorDetailsFromIntent] when the report drives further processing,
+     * such as report-destination URL prefills.
+     */
+    @JvmStatic
+    fun getReportFromIntent(context: Context, intent: Intent): ReportSnapshot {
+        val crashConfig = getConfigFromIntent(intent)
+        val provider = object : CanonicalReport.FieldProvider {
+            override val crashId: String get() = getCrashIdFromIntent(intent)
+            override val crashDate: String get() = getCrashDateFromIntent(intent)
+            override val threadName: String get() = getThreadNameFromIntent(intent)
+            override val throwableClass: String get() = getThrowableClassFromIntent(intent)
+            override val throwableMessage: String? get() = getThrowableMessageFromIntent(intent)
+            override val stackTrace: String? get() = getStackTraceFromIntent(intent)
+            override val activityLog: String? get() = getActivityLogFromIntent(intent)
+        }
+        val facts = DeviceInfo.buildFacts(context, crashConfig.isIncludeBuildDate)
+        return CanonicalReport.buildSnapshot(crashConfig, provider, facts)
+    }
+
+    /**
+     * Canonical crash report text, built once by [CanonicalReport] so every
+     * destination and both UIs consume identical text. Compatibility wrapper
+     * over [getReportFromIntent].
+     */
     @JvmStatic
     fun getAllErrorDetailsFromIntent(context: Context, intent: Intent): String {
-        val crashConfig = getConfigFromIntent(intent)
-        val errorDetails = StringBuilder()
+        return getReportFromIntent(context, intent).text
+    }
 
-        if (crashConfig.isIncludeCrashId) {
-            errorDetails.append("Crash ID: ").append(getCrashIdFromIntent(intent)).append("\n")
+    /**
+     * Resolves the report subject: an explicit [CrashConfig.reportSubject] is
+     * used unchanged; otherwise the library default format is applied, which
+     * embeds the crash ID only when [CrashConfig.isIncludeCrashId] is enabled
+     * so the default subject cannot leak it against that setting.
+     */
+    @JvmStatic
+    fun getReportSubject(context: Context, config: CrashConfig, crashId: String): String {
+        val explicit = config.reportSubject
+        if (explicit != null) {
+            return explicit
         }
-
-        errorDetails.append("Crash date: ").append(getCrashDateFromIntent(intent)).append("\n")
-        errorDetails.append("Crash thread: ").append(getThreadNameFromIntent(intent)).append("\n")
-        errorDetails.append("Exception: ").append(getThrowableClassFromIntent(intent)).append("\n")
-
-        val throwableMessage = getThrowableMessageFromIntent(intent)
-        if (!throwableMessage.isNullOrBlank()) {
-            errorDetails.append("Message: ").append(throwableMessage).append("\n")
+        return if (config.isIncludeCrashId) {
+            context.getString(R.string.xtcrash_default_report_subject, context.packageName, crashId)
+        } else {
+            context.getString(R.string.xtcrash_default_report_subject_no_id, context.packageName)
         }
-
-        errorDetails.append("\n")
-
-        if (crashConfig.isIncludeDeviceInfo) {
-            errorDetails.append("Package: ").append(context.packageName).append("\n")
-            errorDetails.append("App version: ").append(getVersionName(context)).append(" (").append(getVersionCode(context)).append(")\n")
-            errorDetails.append("XtCrash version: ").append(VERSION).append("\n")
-            if (crashConfig.isIncludeBuildDate) {
-                val buildDate = getBuildDateAsString(context, createDateFormat())
-                if (buildDate != null) {
-                    errorDetails.append("Build date: ").append(buildDate).append("\n")
-                }
-            }
-            errorDetails.append("Android: ").append(Build.VERSION.RELEASE).append(" (API ").append(Build.VERSION.SDK_INT).append(")\n")
-            errorDetails.append("Device: ").append(getDeviceModelName()).append("\n")
-            errorDetails.append("Brand: ").append(Build.BRAND).append("\n")
-            errorDetails.append("Manufacturer: ").append(Build.MANUFACTURER).append("\n")
-            errorDetails.append("\n")
-        }
-
-        val additionalInfo = crashConfig.additionalReportInfo
-        if (additionalInfo != null) {
-            errorDetails.append("Additional information:\n")
-            errorDetails.append(additionalInfo).append("\n\n")
-        }
-
-        if (crashConfig.isIncludeStackTrace) {
-            errorDetails.append("Stack trace:\n")
-            val stackTrace = getStackTraceFromIntent(intent)
-            errorDetails.append(stackTrace ?: "No stack trace available.")
-            errorDetails.append("\n")
-        }
-
-        val activityLogText = getActivityLogFromIntent(intent)
-        if (crashConfig.isIncludeActivityLog && !activityLogText.isNullOrBlank()) {
-            errorDetails.append("\nActivity log:\n")
-            errorDetails.append(activityLogText)
-        }
-
-        return errorDetails.toString()
     }
 
     /**
@@ -531,64 +526,6 @@ object CrashActivity {
             currentThrowable = currentThrowable.cause
         }
         return false
-    }
-
-    private fun getBuildDateAsString(context: Context, dateFormat: DateFormat): String? {
-        try {
-            val applicationInfo = context.packageManager.getApplicationInfo(context.packageName, 0)
-            ZipFile(applicationInfo.sourceDir).use { zipFile ->
-                val zipEntry = zipFile.getEntry("classes.dex") ?: return null
-                val buildDate = zipEntry.time
-                if (buildDate > 312764400000L) {
-                    return dateFormat.format(Date(buildDate))
-                }
-            }
-        } catch (ignored: Exception) {
-            return null
-        }
-        return null
-    }
-
-    private fun getVersionName(context: Context): String {
-        try {
-            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            return packageInfo.versionName ?: "Unknown"
-        } catch (e: Exception) {
-            return "Unknown"
-        }
-    }
-
-    @Suppress("DEPRECATION")
-    private fun getVersionCode(context: Context): Long {
-        try {
-            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                return packageInfo.longVersionCode
-            }
-            return packageInfo.versionCode.toLong()
-        } catch (e: Exception) {
-            return -1
-        }
-    }
-
-    private fun getDeviceModelName(): String {
-        val manufacturer = Build.MANUFACTURER ?: ""
-        val model = Build.MODEL ?: ""
-        if (model.lowercase(Locale.US).startsWith(manufacturer.lowercase(Locale.US))) {
-            return capitalize(model)
-        }
-        return capitalize(manufacturer) + " " + model
-    }
-
-    private fun capitalize(value: String?): String {
-        if (value.isNullOrEmpty()) {
-            return ""
-        }
-        val first = value[0]
-        if (Character.isUpperCase(first)) {
-            return value
-        }
-        return first.uppercaseChar() + value.substring(1)
     }
 
     private fun guessRestartActivityClass(context: Context, crashConfig: CrashConfig): Class<out Activity>? {
