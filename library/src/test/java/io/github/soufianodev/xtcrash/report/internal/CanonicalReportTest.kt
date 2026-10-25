@@ -1,6 +1,8 @@
 package io.github.soufianodev.xtcrash.report.internal
 
+import io.github.soufianodev.xtcrash.CrashActivity
 import io.github.soufianodev.xtcrash.config.CrashConfig
+import io.github.soufianodev.xtcrash.report.ReportSection
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -142,5 +144,98 @@ class CanonicalReportTest {
         val before = canonical
         PrefillShortener.shorten(blocks, budgetBytes = 100)
         assertEquals("shortening must not mutate the canonical report", before, canonical)
+    }
+
+    @Test
+    fun exactDefaultReportText() {
+        val expected = "Crash ID: XTCRASH-ABC\n" +
+                "Crash date: 2026-01-02 03:04:05\n" +
+                "Crash thread: main\n" +
+                "Exception: java.lang.RuntimeException\n" +
+                "Message: boom\n" +
+                "\n" +
+                "Package: com.example.app\n" +
+                "App version: 1.2.3 (42)\n" +
+                "XtCrash version: " + CrashActivity.VERSION + "\n" +
+                "Build date: 2026-01-01 00:00:00\n" +
+                "Android: 14 (API 34)\n" +
+                "Device: Pixel 8\n" +
+                "Brand: google\n" +
+                "Manufacturer: Google\n" +
+                "\n" +
+                "Stack trace:\n" +
+                "java.lang.RuntimeException: boom\n\tat Foo.bar(Foo.kt:1)\n"
+        assertEquals(expected, CanonicalReport.build(config(), provider(), facts()))
+    }
+
+    @Test
+    fun exactTextWithAllOptionalSections() {
+        val provider = provider(activityLog = "created\nresumed")
+        val config = config().apply { additionalReportInfo = "Screen: MainActivity" }
+        val expected = "Crash ID: XTCRASH-ABC\n" +
+                "Crash date: 2026-01-02 03:04:05\n" +
+                "Crash thread: main\n" +
+                "Exception: java.lang.RuntimeException\n" +
+                "Message: boom\n" +
+                "\n" +
+                "Package: com.example.app\n" +
+                "App version: 1.2.3 (42)\n" +
+                "XtCrash version: " + CrashActivity.VERSION + "\n" +
+                "Build date: 2026-01-01 00:00:00\n" +
+                "Android: 14 (API 34)\n" +
+                "Device: Pixel 8\n" +
+                "Brand: google\n" +
+                "Manufacturer: Google\n" +
+                "\n" +
+                "Additional information:\n" +
+                "Screen: MainActivity\n" +
+                "\n" +
+                "Stack trace:\n" +
+                "java.lang.RuntimeException: boom\n\tat Foo.bar(Foo.kt:1)\n" +
+                "\n" +
+                "Activity log:\n" +
+                "created\nresumed"
+        assertEquals(expected, CanonicalReport.build(config, provider, facts()))
+    }
+
+    @Test
+    fun snapshotTextMatchesBuildAndSectionsConcat() {
+        val provider = provider(activityLog = "created\nresumed")
+        val config = config().apply { additionalReportInfo = "Screen: MainActivity" }
+        val snapshot = CanonicalReport.buildSnapshot(config, provider, facts())
+        assertEquals(CanonicalReport.build(config, provider, facts()), snapshot.text)
+        assertEquals(snapshot.text, snapshot.sections.joinToString("") { it.text })
+    }
+
+    @Test
+    fun snapshotSectionsFollowConfigFlags() {
+        val config = config().apply {
+            isIncludeCrashId = false
+            isIncludeDeviceInfo = false
+            isIncludeStackTrace = false
+            isIncludeActivityLog = false
+        }
+        val snapshot = CanonicalReport.buildSnapshot(config, provider(), facts())
+        assertEquals(listOf(ReportSection.Kind.HEADER), snapshot.sections.map { it.kind })
+        val header = snapshot.sections.first().text
+        assertFalse(header.contains("Crash ID:"))
+        assertTrue(header.contains("Crash date:"))
+        assertEquals(snapshot.text, snapshot.sections.joinToString("") { it.text })
+    }
+
+    @Test
+    fun markerLikeMessageDoesNotCorruptSections() {
+        val provider = provider(
+            throwableMessage = "failed at Package: fake.app near Stack trace: marker",
+        )
+        val snapshot = CanonicalReport.buildSnapshot(config(), provider, facts())
+        val kinds = snapshot.sections.map { it.kind }
+        assertTrue(ReportSection.Kind.HEADER in kinds)
+        assertTrue(ReportSection.Kind.DEVICE in kinds)
+        assertTrue(ReportSection.Kind.STACK_TRACE in kinds)
+        val device = snapshot.sections.first { it.kind == ReportSection.Kind.DEVICE }.text
+        assertTrue(device.startsWith("Package: com.example.app\n"))
+        assertFalse(device.contains("fake.app"))
+        assertEquals(snapshot.text, snapshot.sections.joinToString("") { it.text })
     }
 }

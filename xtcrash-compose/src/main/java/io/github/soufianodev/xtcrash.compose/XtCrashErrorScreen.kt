@@ -51,6 +51,7 @@ import io.github.soufianodev.xtcrash.R
 import io.github.soufianodev.xtcrash.config.CrashConfig
 import io.github.soufianodev.xtcrash.report.PreparedReport
 import io.github.soufianodev.xtcrash.report.ReportDestination
+import io.github.soufianodev.xtcrash.report.ReportSection
 import io.github.soufianodev.xtcrash.report.internal.ReportDispatcher
 
 /**
@@ -71,6 +72,7 @@ fun XtCrashErrorScreen(
         errorDetails: String,
         crashId: String = "",
         subject: String? = null,
+        sections: List<ReportSection>? = null,
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
@@ -84,28 +86,28 @@ fun XtCrashErrorScreen(
         }
     }
 
-    var showDetailsDialog by remember { mutableStateOf(false) }
-    val dispatcher = remember {
+    // Keyed on every captured crash input: a new payload (e.g. a repeat
+    // singleTask launch via onNewIntent) rebuilds the dispatcher and resets
+    // all dialog state, so no previous crash's report or URL survives.
+    val dispatcher = remember(context, config, errorDetails, crashId, subject, sections) {
         ReportDispatcher(
                 context = context,
                 config = config,
                 canonicalReport = errorDetails,
                 crashId = crashId,
-                subject = subject
-                        ?: context.getString(R.string.xtcrash_default_report_subject, context.packageName, crashId),
+                subject = subject ?: CrashActivity.getReportSubject(context, config, crashId),
+                sections = sections,
         )
     }
-    var reportState by remember { mutableStateOf<ReportDispatcher.ReportState?>(null) }
-    var lastPrepared by remember { mutableStateOf<PreparedReport?>(null) }
-    var pendingWeb by remember { mutableStateOf<ReportDispatcher.ReportState?>(null) }
+    var showDetailsDialog by remember(dispatcher) { mutableStateOf(false) }
+    var reportState by remember(dispatcher) { mutableStateOf<ReportDispatcher.ReportState?>(null) }
+    var pendingWeb by remember(dispatcher) { mutableStateOf<ReportDispatcher.ReportState?>(null) }
 
     androidx.compose.runtime.DisposableEffect(dispatcher) {
         val listener = object : ReportDispatcher.Listener {
             override fun onReportState(state: ReportDispatcher.ReportState) {
-                state.prepared?.let { lastPrepared = it }
-                // WAITING_USER_ACTION's message is the confirmation-dialog text,
-                // so it must not be toasted on top of the dialog showing it.
-                if (state.phase != ReportDispatcher.Phase.WAITING_USER_ACTION) {
+                // A message the dialogs render is never also toasted.
+                if (!state.messageShownInDialog) {
                     state.message?.let { message ->
                         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                     }
@@ -117,7 +119,10 @@ fun XtCrashErrorScreen(
             }
         }
         dispatcher.setListener(listener)
-        onDispose { dispatcher.setListener(null) }
+        onDispose {
+            dispatcher.invalidate()
+            dispatcher.setListener(null)
+        }
     }
 
     Box(
@@ -245,12 +250,19 @@ fun XtCrashErrorScreen(
                         prepared = prepared,
                         message = state.message ?: "",
                         onConfirm = {
-                            pendingWeb = null
-                            dispatcher.openConfirmedWebUrl(prepared)
+                            // Guard on the staging state so a stale dialog cannot
+                            // confirm a newer pending request; confirmWebUrl consumes
+                            // the staged confirmation exactly once.
+                            if (pendingWeb === state) {
+                                pendingWeb = null
+                                dispatcher.confirmWebUrl()
+                            }
                         },
                         onDismiss = {
-                            pendingWeb = null
-                            dispatcher.cancelPending()
+                            if (pendingWeb === state) {
+                                pendingWeb = null
+                                dispatcher.cancelPending()
+                            }
                         },
                 )
             }
@@ -263,12 +275,16 @@ fun XtCrashErrorScreen(
             if (needsFallback && state.fallbackAvailable) {
                 ExplicitFallbackDialog(
                         config = config,
-                        prepared = lastPrepared,
+                        prepared = state.prepared,
+                        message = state.message ?: "",
                         onCopy = { context.copyErrorToClipboard(errorDetails) },
-                        onOpenIssue = { prepared ->
-                            prepared?.let { dispatcher.openConfirmedWebUrl(it) }
+                        onOpenIssue = {
+                            if (reportState === state) {
+                                reportState = null
+                                dispatcher.requestWebUrlConfirmation()
+                            }
                         },
-                        onDismiss = { reportState = null },
+                        onDismiss = { if (reportState === state) reportState = null },
                 )
             }
         }
@@ -369,29 +385,31 @@ private fun PrivacyConfirmDialog(
 /**
  * Explicit user-selected fallback dialog. Invoked only after an uncertain or
  * failed handoff, and it bypasses the report-action handler and custom sender.
+ * [message] is the dispatcher-built text, so neither UI reconstructs
+ * destination-specific claims; "Open issue page" only appears when the current
+ * state carries a valid web URL and routes through the shared privacy
+ * confirmation.
  */
 @Composable
 private fun ExplicitFallbackDialog(
         config: CrashConfig,
         prepared: PreparedReport?,
+        message: String,
         onCopy: () -> Unit,
-        onOpenIssue: (PreparedReport?) -> Unit,
+        onOpenIssue: () -> Unit,
         onDismiss: () -> Unit,
 ) {
-    val destination = config.reportDestination
-    val messageRes = when (destination) {
-        ReportDestination.GITHUB, ReportDestination.GITLAB -> R.string.xtcrash_report_manual_paste
-        ReportDestination.EMAIL -> R.string.xtcrash_report_email_no_client
-        else -> R.string.xtcrash_report_copy_and_share
-    }
+    val destination = prepared?.destination ?: config.reportDestination
+    val isWeb = destination == ReportDestination.GITHUB || destination == ReportDestination.GITLAB
+    val hasWebUrl = isWeb && prepared?.url != null
 
     AlertDialog(
             onDismissRequest = onDismiss,
             title = { Text(stringResource(R.string.customactivityoncrash_error_activity_error_details_title)) },
-            text = { Text(stringResource(messageRes)) },
+            text = { Text(message) },
             confirmButton = {
-                if (destination == ReportDestination.GITHUB || destination == ReportDestination.GITLAB) {
-                    TextButton(onClick = { onOpenIssue(prepared) }) {
+                if (hasWebUrl) {
+                    TextButton(onClick = onOpenIssue) {
                         Text(stringResource(R.string.xtcrash_report_open_issue))
                     }
                 } else {

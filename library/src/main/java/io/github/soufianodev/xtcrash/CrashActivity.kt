@@ -16,6 +16,7 @@ import androidx.annotation.RestrictTo
 
 import io.github.soufianodev.xtcrash.activity.DefaultErrorActivity
 import io.github.soufianodev.xtcrash.config.CrashConfig
+import io.github.soufianodev.xtcrash.report.ReportSnapshot
 import io.github.soufianodev.xtcrash.report.internal.CanonicalReport
 import io.github.soufianodev.xtcrash.report.internal.DeviceInfo
 
@@ -358,11 +359,14 @@ object CrashActivity {
     }
 
     /**
-     * Canonical crash report, built once by [CanonicalReport] so every
-     * destination and both UIs consume identical text.
+     * Canonical crash report as one immutable snapshot (full text plus ordered
+     * sections), built once by [CanonicalReport] so display and report
+     * dispatch consume identical content. Prefer this over
+     * [getAllErrorDetailsFromIntent] when the report drives further processing,
+     * such as report-destination URL prefills.
      */
     @JvmStatic
-    fun getAllErrorDetailsFromIntent(context: Context, intent: Intent): String {
+    fun getReportFromIntent(context: Context, intent: Intent): ReportSnapshot {
         val crashConfig = getConfigFromIntent(intent)
         val provider = object : CanonicalReport.FieldProvider {
             override val crashId: String get() = getCrashIdFromIntent(intent)
@@ -374,7 +378,36 @@ object CrashActivity {
             override val activityLog: String? get() = getActivityLogFromIntent(intent)
         }
         val facts = DeviceInfo.buildFacts(context, crashConfig.isIncludeBuildDate)
-        return CanonicalReport.build(crashConfig, provider, facts)
+        return CanonicalReport.buildSnapshot(crashConfig, provider, facts)
+    }
+
+    /**
+     * Canonical crash report text, built once by [CanonicalReport] so every
+     * destination and both UIs consume identical text. Compatibility wrapper
+     * over [getReportFromIntent].
+     */
+    @JvmStatic
+    fun getAllErrorDetailsFromIntent(context: Context, intent: Intent): String {
+        return getReportFromIntent(context, intent).text
+    }
+
+    /**
+     * Resolves the report subject: an explicit [CrashConfig.reportSubject] is
+     * used unchanged; otherwise the library default format is applied, which
+     * embeds the crash ID only when [CrashConfig.isIncludeCrashId] is enabled
+     * so the default subject cannot leak it against that setting.
+     */
+    @JvmStatic
+    fun getReportSubject(context: Context, config: CrashConfig, crashId: String): String {
+        val explicit = config.reportSubject
+        if (explicit != null) {
+            return explicit
+        }
+        return if (config.isIncludeCrashId) {
+            context.getString(R.string.xtcrash_default_report_subject, context.packageName, crashId)
+        } else {
+            context.getString(R.string.xtcrash_default_report_subject_no_id, context.packageName)
+        }
     }
 
     /**

@@ -25,6 +25,7 @@ import io.github.soufianodev.xtcrash.CrashActivity
 import io.github.soufianodev.xtcrash.R
 import io.github.soufianodev.xtcrash.config.CrashConfig
 import io.github.soufianodev.xtcrash.report.PreparedReport
+import io.github.soufianodev.xtcrash.report.ReportSnapshot
 import io.github.soufianodev.xtcrash.report.internal.ReportDispatcher
 
 /**
@@ -36,9 +37,13 @@ import io.github.soufianodev.xtcrash.report.internal.ReportDispatcher
 class DefaultErrorActivity : AppCompatActivity() {
 
     private lateinit var config: CrashConfig
+    private var reportSnapshot: ReportSnapshot? = null
     private var detailsDialog: AlertDialog? = null
     private var dispatcher: ReportDispatcher? = null
-    private var lastPrepared: PreparedReport? = null
+
+    /** Privacy/fallback dialog plus the state that staged it, for callback guards. */
+    private var reportDialog: AlertDialog? = null
+    private var reportDialogState: ReportDispatcher.ReportState? = null
 
     @SuppressLint("PrivateResource")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,21 +60,34 @@ class DefaultErrorActivity : AppCompatActivity() {
 
         setContentView(R.layout.crash_default_error_activity)
 
-        dispatcher = ReportDispatcher(
+        dispatcher = createDispatcher()
+
+        renderCrash()
+    }
+
+    /**
+     * Builds a dispatcher for the current intent's crash from one report
+     * snapshot, so display and dispatch share identical content. The listener
+     * is attached here; every replacement path invalidates and detaches the
+     * previous dispatcher first.
+     */
+    private fun createDispatcher(): ReportDispatcher {
+        val snapshot = CrashActivity.getReportFromIntent(this, intent)
+        reportSnapshot = snapshot
+        val created = ReportDispatcher(
                 context = this,
                 config = config,
-                canonicalReport = CrashActivity.getAllErrorDetailsFromIntent(this, intent),
+                canonicalReport = snapshot.text,
                 crashId = CrashActivity.getCrashIdFromIntent(intent),
-                subject = config.reportSubject
-                        ?: getString(R.string.xtcrash_default_report_subject, packageName, CrashActivity.getCrashIdFromIntent(intent)),
+                subject = CrashActivity.getReportSubject(this, config, CrashActivity.getCrashIdFromIntent(intent)),
+                sections = snapshot.sections,
         )
-        dispatcher?.setListener(object : ReportDispatcher.Listener {
+        created.setListener(object : ReportDispatcher.Listener {
             override fun onReportState(state: ReportDispatcher.ReportState) {
                 renderReportState(state)
             }
         })
-
-        renderCrash()
+        return created
     }
 
     /**
@@ -77,16 +95,27 @@ class DefaultErrorActivity : AppCompatActivity() {
      * the platform routes a repeat launch of this screen through
      * [onNewIntent] instead of a new instance; without this hook the old
      * screen would keep showing the previous crash and the restart-time
-     * trace would not be logged again.
+     * trace would not be logged again. The previous crash's dispatcher,
+     * listener, and open report dialogs are discarded first so no stale
+     * report, URL, or confirmation can survive the replacement.
      */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        reportDialog?.dismiss()
+        reportDialog = null
+        reportDialogState = null
+        dispatcher?.invalidate()
+        dispatcher?.setListener(null)
         config = CrashActivity.getConfigFromIntent(intent)
+        dispatcher = createDispatcher()
         renderCrash()
     }
 
     private fun renderCrash() {
+        reportDialog?.dismiss()
+        reportDialog = null
+        reportDialogState = null
         detailsDialog?.dismiss()
         detailsDialog = null
         setupWindow()
@@ -97,6 +126,11 @@ class DefaultErrorActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        dispatcher?.invalidate()
+        dispatcher?.setListener(null)
+        reportDialog?.dismiss()
+        reportDialog = null
+        reportDialogState = null
         detailsDialog?.dismiss()
         super.onDestroy()
     }
@@ -249,80 +283,100 @@ class DefaultErrorActivity : AppCompatActivity() {
      * consume the same state machine, so their destination behavior, progress
      * and completion states, configuration errors, clipboard feedback, handler
      * failure feedback, uncertain-handoff messaging, and explicit fallback
-     * actions stay equivalent.
+     * actions stay equivalent. Dialog text comes verbatim from the dispatcher;
+     * a message a dialog displays is never also toasted.
      */
     private fun renderReportState(state: ReportDispatcher.ReportState) {
-        state.prepared?.let { lastPrepared = it }
-
-        // WAITING_USER_ACTION's message is the confirmation-dialog text, so it
-        // must not be toasted on top of the dialog that already shows it.
-        if (state.phase != ReportDispatcher.Phase.WAITING_USER_ACTION) {
+        if (!state.messageShownInDialog) {
             state.message?.let { message ->
                 Toast.makeText(this, message, Toast.LENGTH_LONG).show()
             }
         }
 
-        when (state.phase) {
-            ReportDispatcher.Phase.WAITING_USER_ACTION -> {
+        when {
+            state.phase == ReportDispatcher.Phase.WAITING_USER_ACTION -> {
                 val prepared = state.prepared ?: return
-                val destinationLabel = if (prepared.destination == io.github.soufianodev.xtcrash.report.ReportDestination.GITHUB) "GitHub" else "GitLab"
-                AlertDialog.Builder(this)
-                        .setTitle(getString(R.string.xtcrash_report_url_privacy_title, destinationLabel))
-                        .setMessage(state.message ?: "")
-                        .setPositiveButton(R.string.xtcrash_report_url_continue) { _, _ ->
-                            dispatcher?.openConfirmedWebUrl(prepared)
-                        }
-                        .setNegativeButton(R.string.xtcrash_report_url_cancel) { _, _ ->
-                            dispatcher?.cancelPending()
-                        }
-                        .setOnCancelListener { dispatcher?.cancelPending() }
-                        .show()
+                showReportDialog(state, prepared)
             }
-            ReportDispatcher.Phase.FALLBACK_AVAILABLE, ReportDispatcher.Phase.CONFIG_INVALID, ReportDispatcher.Phase.UNKNOWN -> {
-                if (state.fallbackAvailable) {
-                    offerExplicitFallback()
-                }
+            (state.phase == ReportDispatcher.Phase.FALLBACK_AVAILABLE
+                    || state.phase == ReportDispatcher.Phase.CONFIG_INVALID
+                    || state.phase == ReportDispatcher.Phase.UNKNOWN) && state.fallbackAvailable -> {
+                offerExplicitFallback(state)
             }
             else -> Unit
         }
     }
 
     /**
+     * Pre-navigation privacy confirmation. Callbacks are bound to the creating
+     * dispatcher and guard on the staging state, so a stale dialog can neither
+     * confirm nor cancel a newer pending request; [ReportDispatcher.confirmWebUrl]
+     * additionally consumes the staged confirmation exactly once.
+     */
+    private fun showReportDialog(state: ReportDispatcher.ReportState, prepared: PreparedReport) {
+        val creatingDispatcher = dispatcher ?: return
+        val destinationLabel = if (prepared.destination == io.github.soufianodev.xtcrash.report.ReportDestination.GITHUB) "GitHub" else "GitLab"
+        reportDialog?.dismiss()
+        reportDialogState = state
+        reportDialog = AlertDialog.Builder(this)
+                .setTitle(getString(R.string.xtcrash_report_url_privacy_title, destinationLabel))
+                .setMessage(state.message ?: "")
+                .setPositiveButton(R.string.xtcrash_report_url_continue) { _, _ ->
+                    if (reportDialogState === state) {
+                        reportDialogState = null
+                        creatingDispatcher.confirmWebUrl()
+                    }
+                }
+                .setNegativeButton(R.string.xtcrash_report_url_cancel) { _, _ ->
+                    if (reportDialogState === state) {
+                        reportDialogState = null
+                        creatingDispatcher.cancelPending()
+                    }
+                }
+                .setOnCancelListener {
+                    if (reportDialogState === state) {
+                        reportDialogState = null
+                        creatingDispatcher.cancelPending()
+                    }
+                }
+                .show()
+    }
+
+    /**
      * Explicit user-selected fallback: bypasses the report-action handler and
      * custom sender, using the safe destination-specific action instead.
+     * Buttons and text derive from the fallback's own state — never from a
+     * previous request — and "Open issue page" routes through the shared
+     * privacy confirmation, gated on the current state carrying a valid URL.
      */
-    private fun offerExplicitFallback() {
-        val destination = config.reportDestination
+    private fun offerExplicitFallback(state: ReportDispatcher.ReportState) {
+        val creatingDispatcher = dispatcher ?: return
+        val prepared = state.prepared
+        val destination = prepared?.destination ?: config.reportDestination
         val builder = AlertDialog.Builder(this)
                 .setTitle(R.string.customactivityoncrash_error_activity_error_details_title)
+                .setMessage(state.message ?: "")
 
-        when (destination) {
-            io.github.soufianodev.xtcrash.report.ReportDestination.GITHUB,
-            io.github.soufianodev.xtcrash.report.ReportDestination.GITLAB -> {
-                builder.setMessage(R.string.xtcrash_report_manual_paste)
-                        .setPositiveButton(R.string.xtcrash_report_open_issue) { _, _ ->
-                            lastPrepared?.let { dispatcher?.openConfirmedWebUrl(it) }
-                        }
-                        .setNeutralButton(R.string.xtcrash_report_copy) { _, _ ->
-                            copyErrorToClipboard(CrashActivity.getAllErrorDetailsFromIntent(this, intent))
-                        }
-            }
-            io.github.soufianodev.xtcrash.report.ReportDestination.EMAIL -> {
-                builder.setMessage(R.string.xtcrash_report_email_no_client)
-                        .setNeutralButton(R.string.xtcrash_report_copy) { _, _ ->
-                            copyErrorToClipboard(CrashActivity.getAllErrorDetailsFromIntent(this, intent))
-                        }
-            }
-            else -> {
-                builder.setMessage(R.string.xtcrash_report_copy_and_share)
-                        .setNeutralButton(R.string.xtcrash_report_copy) { _, _ ->
-                            copyErrorToClipboard(CrashActivity.getAllErrorDetailsFromIntent(this, intent))
-                        }
+        val hasWebUrl = (destination == io.github.soufianodev.xtcrash.report.ReportDestination.GITHUB
+                || destination == io.github.soufianodev.xtcrash.report.ReportDestination.GITLAB)
+                && prepared?.url != null
+        if (hasWebUrl) {
+            builder.setPositiveButton(R.string.xtcrash_report_open_issue) { _, _ ->
+                if (reportDialogState === state) {
+                    reportDialogState = null
+                    creatingDispatcher.requestWebUrlConfirmation()
+                }
             }
         }
-
+        builder.setNeutralButton(R.string.xtcrash_report_copy) { _, _ ->
+            copyErrorToClipboard(reportSnapshot?.text
+                    ?: CrashActivity.getAllErrorDetailsFromIntent(this, intent))
+        }
         builder.setNegativeButton(R.string.customactivityoncrash_error_activity_error_details_close, null)
-                .show()
+
+        reportDialog?.dismiss()
+        reportDialogState = state
+        reportDialog = builder.show()
     }
 
     private fun tintPrimaryButton(button: Button) {
@@ -336,7 +390,8 @@ class DefaultErrorActivity : AppCompatActivity() {
     }
 
     private fun showErrorDetailsDialog() {
-        val errorInformation = CrashActivity.getAllErrorDetailsFromIntent(this@DefaultErrorActivity, intent)
+        val errorInformation = reportSnapshot?.text
+                ?: CrashActivity.getAllErrorDetailsFromIntent(this@DefaultErrorActivity, intent)
         val builder = AlertDialog.Builder(this@DefaultErrorActivity)
                 .setTitle(R.string.customactivityoncrash_error_activity_error_details_title)
                 .setMessage(errorInformation)
