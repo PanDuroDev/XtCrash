@@ -36,6 +36,23 @@ Install `xtcrash-sample` on a device or emulator to exercise the crash
 scenarios: test crashes, restart behavior, activity logs, report sharing, and
 the enable/disable switch in `MainActivity`.
 
+### TODO: Deferred Android smoke tests for crash-report routing (PR #18)
+
+These checks remain pending until an Android device or emulator is available.
+Source review, unit tests, and successful build/lint tasks do not count as
+runtime verification.
+
+- [ ] Trigger a crash while the privacy-confirmation dialog is open; verify
+      request ownership, cancellation/replacement behavior, and that no stale
+      report or URL is reused.
+- [ ] Force destination-validation failure; verify the fallback Copy action
+      and the updated instruction after both successful and failed clipboard
+      copies.
+- [ ] Verify browser handoff and the no-browser fallback in both the default
+      Android error activity and the Compose error UI.
+- [ ] Record the Android version/API level and environment, along with the
+      observed results, before marking these checks complete.
+
 Run the full module build before opening a pull request. A change that compiles
 one module but breaks another is caught by the three-module build.
 
