@@ -98,15 +98,20 @@ internal object IssueUrlBuilder {
     ): BuiltUrl {
         val fixed = base + "?" + titleParam + "=" + encodeValue(title) + "&" + descriptionParam + "="
         val fixedBytes = PrefillShortener.utf8Bytes(fixed)
-        val bodyBudget = budgetBytes - fixedBytes
 
-        if (bodyBudget <= 0) {
-            // No room for any description; caller falls back to the base page.
-            return BuiltUrl(fixed.trimEnd('&', '?'), body = "", shortened = true)
+        if (fixedBytes > budgetBytes) {
+            // The title alone exhausts the budget. Trimming the trailing
+            // separator cannot help, because the title stays in the URL, so
+            // offer only the bare issue page when it fits on its own; the
+            // caller treats an empty url as "no usable URL" and offers Copy
+            // instead of opening a malformed target.
+            val bare = base.takeIf { PrefillShortener.utf8Bytes(it) <= budgetBytes } ?: ""
+            return BuiltUrl(bare, body = "", shortened = true)
         }
 
         // Cost per block is its percent-encoded size, so the final encoded URL
         // (fixed prefix + encoded body) is guaranteed to stay within budget.
+        val bodyBudget = budgetBytes - fixedBytes
         val shortened = PrefillShortener.shorten(blocks, bodyBudget, cost = { encodeValue(it).length })
         val url = fixed + encodeValue(shortened.body)
         return BuiltUrl(url, body = shortened.body, shortened = shortened.omittedContent)

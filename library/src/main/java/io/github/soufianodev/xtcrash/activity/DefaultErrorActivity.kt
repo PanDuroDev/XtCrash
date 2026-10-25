@@ -369,8 +369,10 @@ class DefaultErrorActivity : AppCompatActivity() {
             }
         }
         builder.setNeutralButton(R.string.xtcrash_report_copy) { _, _ ->
-            copyErrorToClipboard(reportSnapshot?.text
-                    ?: CrashActivity.getAllErrorDetailsFromIntent(this, intent))
+            if (reportDialogState === state) {
+                reportDialogState = null
+                creatingDispatcher.copyReportForFallback()
+            }
         }
         builder.setNegativeButton(R.string.customactivityoncrash_error_activity_error_details_close, null)
 

@@ -99,7 +99,7 @@ internal object CanonicalReport {
             sections.add(ReportSection(ReportSection.Kind.ACTIVITY_LOG, "\nActivity log:\n$activityLog"))
         }
 
-        return ReportSnapshot(sections.joinToString("") { it.text }, sections)
+        return ReportSnapshot(sections.joinToString("") { it.text }, sections.toList())
     }
 
     /** Reads the captured crash extras. Backed by [CrashActivity] intent getters. */

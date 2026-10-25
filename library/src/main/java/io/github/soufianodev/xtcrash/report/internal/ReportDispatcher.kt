@@ -109,6 +109,10 @@ class ReportDispatcher(
     @Volatile
     private var currentPrepared: PreparedReport? = null
 
+    /** Request id of the most recent request, passed to every emission it causes. */
+    @Volatile
+    private var currentRequestId: String? = null
+
     fun setListener(listener: Listener?) {
         this.listener = listener
     }
@@ -125,6 +129,7 @@ class ReportDispatcher(
         }
         val requestId = UUID.randomUUID().toString()
         ownership.beginRequest(requestId)
+        currentRequestId = requestId
         dispatch(requestId)
     }
 
@@ -146,6 +151,8 @@ class ReportDispatcher(
      * that an external handler's acceptance was cancelled or rolled back.
      */
     fun invalidate() {
+        currentRequestId = null
+        currentPrepared = null
         ownership.invalidate()
     }
 
@@ -154,24 +161,30 @@ class ReportDispatcher(
      * single entry point for both the normal web action and the explicit
      * fallback, so every route to opening a report-bearing URL passes through
      * the confirmation state. Takes no arguments so the UI cannot pass a stale
-     * or foreign prepared report.
+     * or foreign prepared report. A no-op once this dispatcher has been
+     * invalidated or superseded, so it cannot copy a discarded report.
      */
     fun requestWebUrlConfirmation() {
+        val requestId = currentRequestId ?: return
+        if (!ownership.owns(requestId)) {
+            return
+        }
         val prepared = currentPrepared ?: return
-        performWebAction(prepared)
+        performWebAction(requestId, prepared)
     }
 
     /**
      * Opens the URL of the pending confirmation, consuming it. Only a live,
      * unconsumed confirmation owned by the current request navigates; stale,
-     * cancelled, replaced, or invalidated confirms are no-ops.
+     * cancelled, superseded, or invalidated confirms are no-ops.
      */
     fun confirmWebUrl() {
-        val prepared = ownership.consumeConfirmation() ?: return
-        openUrl(prepared)
+        val requestId = currentRequestId ?: return
+        val prepared = ownership.consumeConfirmation(requestId) ?: return
+        openUrl(requestId, prepared)
     }
 
-    private fun emit(state: ReportState) {
+    private fun emit(requestId: String, state: ReportState) {
         // Terminal phases end the request; WAITING_USER_ACTION keeps it open
         // until the user confirms or cancels the dialog, and stages the one
         // confirmation confirmWebUrl may consume.
@@ -181,10 +194,13 @@ class ReportDispatcher(
             else -> Unit
         }
         if (state.phase == Phase.WAITING_USER_ACTION) {
-            state.prepared?.let { ownership.stageConfirmation(it) }
+            state.prepared?.let { ownership.stageConfirmation(requestId, it) }
         }
         mainHandler.post {
-            if (ownership.isInvalidated) {
+            // Check ownership again inside the callback: a newer request can
+            // start between the emission and this post running, and a stale
+            // state must not update the UI or drive a dialog action.
+            if (!ownership.owns(requestId)) {
                 return@post
             }
             listener?.onReportState(state)
@@ -197,14 +213,17 @@ class ReportDispatcher(
         if (destination != null) {
             val validationError = validateDestination(destination)
             if (validationError != null) {
-                emit(ReportState(Phase.CONFIG_INVALID, validationError, fallbackAvailable = true))
+                // currentPrepared stays unset so a later fallback "Open issue
+                // page" cannot act on a report this request never prepared.
+                emit(requestId, ReportState(Phase.CONFIG_INVALID, validationError, fallbackAvailable = true))
                 return
             }
         }
 
         // 3-6. Prepare the canonical report and destination-specific content.
         val prepared = prepare(requestId, destination)
-        emit(ReportState(Phase.PREPARED, prepared = prepared))
+        currentPrepared = prepared
+        emit(requestId, ReportState(Phase.PREPARED, prepared = prepared))
 
         // 8. Invoke the optional report-action handler when configured.
         val handlerClass = config.reportActionHandlerClass
@@ -250,7 +269,6 @@ class ReportDispatcher(
         prepared.destination = destination
         prepared.reportText = canonicalReport
         prepared.subject = subject
-        currentPrepared = prepared
 
         when (destination) {
             ReportDestination.GITHUB -> {
@@ -297,13 +315,15 @@ class ReportDispatcher(
     }
 
     private fun applyBuiltUrl(prepared: PreparedReport, built: BuiltUrl) {
-        prepared.url = built.url
+        // An empty url means no usable issue URL fit the budget (e.g. an
+        // oversized title); leave it unset so the UIs offer Copy only.
+        prepared.url = built.url.ifEmpty { null }
         prepared.prefillOmitsReport = built.shortened || prefillOmitsUnusableSections
         prefillBody = built.body
     }
 
     private fun invokeHandler(requestId: String, handlerClass: Class<out ReportActionHandler>, prepared: PreparedReport) {
-        emit(ReportState(Phase.HANDLER_RUNNING, prepared = prepared))
+        emit(requestId, ReportState(Phase.HANDLER_RUNNING, prepared = prepared))
         val timeoutMs = config.reportHandlerTimeoutMs.toLong()
 
         Thread {
@@ -372,13 +392,13 @@ class ReportDispatcher(
     private fun handleOutcome(requestId: String, outcome: ReportOutcome, prepared: PreparedReport) {
         when (outcome) {
             ReportOutcome.ACCEPTED -> {
-                emit(ReportState(Phase.ACCEPTED, message = context.getString(R.string.xtcrash_report_accepted), prepared = prepared))
+                emit(requestId, ReportState(Phase.ACCEPTED, message = context.getString(R.string.xtcrash_report_accepted), prepared = prepared))
             }
             ReportOutcome.NOT_HANDLED -> {
                 performDestinationAction(requestId, prepared)
             }
             ReportOutcome.FAILED -> {
-                emit(ReportState(
+                emit(requestId, ReportState(
                     Phase.FALLBACK_AVAILABLE,
                     message = fallbackMessage(context.getString(R.string.xtcrash_report_failed), prepared),
                     fallbackAvailable = true,
@@ -386,7 +406,7 @@ class ReportDispatcher(
                 ))
             }
             ReportOutcome.UNKNOWN -> {
-                emit(ReportState(
+                emit(requestId, ReportState(
                     Phase.UNKNOWN,
                     message = fallbackMessage(context.getString(R.string.xtcrash_report_unknown), prepared),
                     fallbackAvailable = true,
@@ -399,9 +419,9 @@ class ReportDispatcher(
     /** Normal action for the selected destination. Also the fallback executor. */
     private fun performDestinationAction(requestId: String, prepared: PreparedReport) {
         when (prepared.destination) {
-            null -> performSharesheetAction(prepared)
-            ReportDestination.EMAIL -> performEmailAction(prepared)
-            ReportDestination.GITHUB, ReportDestination.GITLAB -> performWebAction(prepared)
+            null -> performSharesheetAction(requestId, prepared)
+            ReportDestination.EMAIL -> performEmailAction(requestId, prepared)
+            ReportDestination.GITHUB, ReportDestination.GITLAB -> performWebAction(requestId, prepared)
             ReportDestination.CUSTOM -> performCustomAction(requestId, prepared)
         }
     }
@@ -410,7 +430,7 @@ class ReportDispatcher(
      * Pre-existing generic Android Sharesheet, unchanged: used whenever no
      * destination is configured. Also the crash-report share fallback.
      */
-    private fun performSharesheetAction(prepared: PreparedReport) {
+    private fun performSharesheetAction(requestId: String, prepared: PreparedReport) {
         val chooserTitle = config.reportChooserTitle ?: requireNotNull(config.reportButtonText)
         val send = Intent(Intent.ACTION_SEND)
         send.type = "text/plain"
@@ -419,10 +439,10 @@ class ReportDispatcher(
         config.supportEmail?.let { send.putExtra(Intent.EXTRA_EMAIL, arrayOf(it)) }
         try {
             context.startActivity(Intent.createChooser(send, chooserTitle))
-            emit(ReportState(Phase.HANDOFF_ATTEMPTED, prepared = prepared))
+            emit(requestId, ReportState(Phase.HANDOFF_ATTEMPTED, prepared = prepared))
         } catch (e: ActivityNotFoundException) {
             prepared.reportCopiedToClipboard = copyToClipboard(canonicalReport)
-            emit(ReportState(
+            emit(requestId, ReportState(
                 Phase.FALLBACK_AVAILABLE,
                 message = if (prepared.reportCopiedToClipboard) {
                     context.getString(R.string.xtcrash_no_share_app_found)
@@ -443,7 +463,7 @@ class ReportDispatcher(
      * ActivityNotFoundException instead of package queries, which avoids
      * package-visibility gaps on API 30+.
      */
-    private fun performEmailAction(prepared: PreparedReport) {
+    private fun performEmailAction(requestId: String, prepared: PreparedReport) {
         val email = config.supportEmail
         val sendTo = Intent(Intent.ACTION_SENDTO)
         sendTo.data = Uri.parse("mailto:" + (email ?: ""))
@@ -452,11 +472,11 @@ class ReportDispatcher(
 
         try {
             context.startActivity(sendTo)
-            emit(ReportState(Phase.HANDOFF_ATTEMPTED, prepared = prepared))
+            emit(requestId, ReportState(Phase.HANDOFF_ATTEMPTED, prepared = prepared))
         } catch (e: ActivityNotFoundException) {
             prepared.reportCopiedToClipboard = copyToClipboard(canonicalReport)
             val status = context.getString(R.string.xtcrash_report_no_email_client)
-            emit(ReportState(
+            emit(requestId, ReportState(
                 Phase.FALLBACK_AVAILABLE,
                 message = fallbackMessage(status, prepared),
                 fallbackAvailable = true,
@@ -470,10 +490,10 @@ class ReportDispatcher(
      * had to be shortened, then wait for the privacy confirmation that must
      * appear before any report-bearing URL is opened.
      */
-    private fun performWebAction(prepared: PreparedReport) {
+    private fun performWebAction(requestId: String, prepared: PreparedReport) {
         val url = prepared.url
         if (url == null) {
-            emit(ReportState(
+            emit(requestId, ReportState(
                 Phase.CONFIG_INVALID,
                 message = context.getString(R.string.xtcrash_report_config_invalid),
                 fallbackAvailable = true,
@@ -488,9 +508,39 @@ class ReportDispatcher(
             prepared.reportCopiedToClipboard = copyToClipboard(canonicalReport)
         }
 
-        emit(ReportState(
+        emit(requestId, ReportState(
             Phase.WAITING_USER_ACTION,
             message = privacyDialogMessage(prepared),
+            fallbackAvailable = true,
+            prepared = prepared,
+        ))
+    }
+
+    /**
+     * Copies the canonical report for the fallback dialog's explicit "Copy
+     * report" action, recording the result on the current prepared report so a
+     * later message or browser failure states the clipboard truth. Emits the
+     * same fallback state again with refreshed text. A no-op once this
+     * dispatcher has been invalidated or superseded.
+     */
+    fun copyReportForFallback() {
+        val requestId = currentRequestId ?: return
+        if (!ownership.owns(requestId)) {
+            return
+        }
+        val prepared = currentPrepared
+        val copied = copyToClipboard(canonicalReport)
+        if (prepared != null) {
+            prepared.reportCopiedToClipboard = copied
+        }
+        val status = if (copied) {
+            context.getString(R.string.xtcrash_report_copied)
+        } else {
+            context.getString(R.string.xtcrash_report_not_copied)
+        }
+        emit(requestId, ReportState(
+            Phase.FALLBACK_AVAILABLE,
+            message = fallbackMessage(status, prepared ?: PreparedReport()),
             fallbackAvailable = true,
             prepared = prepared,
         ))
@@ -529,10 +579,10 @@ class ReportDispatcher(
     }
 
     /** Opens the confirmed web URL. Only reachable via [confirmWebUrl]. */
-    private fun openUrl(prepared: PreparedReport) {
+    private fun openUrl(requestId: String, prepared: PreparedReport) {
         val url = prepared.url
         if (url == null) {
-            emit(ReportState(
+            emit(requestId, ReportState(
                 Phase.CONFIG_INVALID,
                 message = context.getString(R.string.xtcrash_report_config_invalid),
                 fallbackAvailable = true,
@@ -542,9 +592,9 @@ class ReportDispatcher(
         }
         try {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-            emit(ReportState(Phase.HANDOFF_ATTEMPTED, prepared = prepared))
+            emit(requestId, ReportState(Phase.HANDOFF_ATTEMPTED, prepared = prepared))
         } catch (e: ActivityNotFoundException) {
-            emit(ReportState(
+            emit(requestId, ReportState(
                 Phase.FALLBACK_AVAILABLE,
                 message = fallbackMessage(context.getString(R.string.xtcrash_report_no_browser), prepared),
                 fallbackAvailable = true,
@@ -556,7 +606,9 @@ class ReportDispatcher(
     private fun performCustomAction(requestId: String, prepared: PreparedReport) {
         val sender = config.reportSender
         if (sender == null) {
-            emit(ReportState(
+            // currentPrepared was never set for this request, so a later
+            // fallback cannot act on a report the sender never took.
+            emit(requestId, ReportState(
                 Phase.CONFIG_INVALID,
                 message = context.getString(R.string.xtcrash_report_config_invalid),
                 fallbackAvailable = true,
@@ -565,7 +617,7 @@ class ReportDispatcher(
             return
         }
 
-        emit(ReportState(Phase.HANDLER_RUNNING, prepared = prepared))
+        emit(requestId, ReportState(Phase.HANDLER_RUNNING, prepared = prepared))
         val timeoutMs = config.reportHandlerTimeoutMs.toLong()
 
         Thread {

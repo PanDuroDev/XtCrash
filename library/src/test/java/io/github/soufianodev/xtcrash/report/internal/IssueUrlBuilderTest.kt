@@ -132,4 +132,38 @@ class IssueUrlBuilderTest {
         assertEquals(IssueUrlBuilder.MIN_URL_BUDGET_BYTES, IssueUrlBuilder.clampBudget(1))
         assertEquals(1234, IssueUrlBuilder.clampBudget(1234))
     }
+
+    @Test
+    fun oversizedTitleReturnsBareIssuePageInsteadOfMalformedUrl() {
+        // Title alone exceeds the budget: the result must not keep the title
+        // (no trimming can shrink it), so only the bare page is offered.
+        val budget = "https://github.com/o/r/issues/new?title=".length + 10
+        val built = IssueUrlBuilder.github(
+            owner = "o",
+            repository = "r",
+            title = "t".repeat(500),
+            blocks = listOf(block("body")),
+            budgetBytes = budget,
+        )
+        assertEquals("https://github.com/o/r/issues/new", built.url)
+        assertEquals("", built.body)
+        assertTrue(built.shortened)
+    }
+
+    @Test
+    fun oversizedTitleAndUnfitBarePageYieldsEmptyUrl() {
+        // Neither the title nor the bare page fits: report an empty url so the
+        // caller offers Copy instead of opening a malformed target.
+        val budget = 10
+        val built = IssueUrlBuilder.github(
+            owner = "o",
+            repository = "r",
+            title = "t".repeat(500),
+            blocks = listOf(block("body")),
+            budgetBytes = budget,
+        )
+        assertEquals("", built.url)
+        assertEquals("", built.body)
+        assertTrue(built.shortened)
+    }
 }

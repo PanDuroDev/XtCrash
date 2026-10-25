@@ -277,7 +277,16 @@ fun XtCrashErrorScreen(
                         config = config,
                         prepared = state.prepared,
                         message = state.message ?: "",
-                        onCopy = { context.copyErrorToClipboard(errorDetails) },
+                        onCopy = {
+                            // Guard on the owning state so a stale dialog
+                            // cannot copy for a superseded request; the
+                            // dispatcher records the result and re-emits a
+                            // truthful message, which also dismisses this
+                            // dialog via reportState.
+                            if (reportState === state) {
+                                dispatcher.copyReportForFallback()
+                            }
+                        },
                         onOpenIssue = {
                             if (reportState === state) {
                                 reportState = null

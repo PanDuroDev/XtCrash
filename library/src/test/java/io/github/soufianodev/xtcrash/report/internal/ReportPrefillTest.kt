@@ -1,6 +1,5 @@
 package io.github.soufianodev.xtcrash.report.internal
 
-import io.github.soufianodev.xtcrash.CrashActivity
 import io.github.soufianodev.xtcrash.config.CrashConfig
 import io.github.soufianodev.xtcrash.report.ReportSection
 import org.junit.Assert.assertEquals
@@ -119,10 +118,23 @@ class ReportPrefillTest {
     }
 
     @Test
-    fun emptyReportWithConsistentSectionsIsUsable() {
+    fun duplicateSectionKindIsUnusableRatherThanSilentlyShortened() {
+        val snapshot = snapshot()
+        // Concatenation still matches, but one section per kind is required:
+        // a projection would otherwise drop the first HEADER while
+        // prefillOmitsReport stayed false.
+        val duplicated = snapshot.sections +
+                ReportSection(ReportSection.Kind.HEADER, "Crash ID: OTHER\n")
+        val plan = planOf(duplicated, snapshot.text + "Crash ID: OTHER\n")
+        assertTrue(plan.unusableSections)
+        assertTrue(plan.blocks.isEmpty())
+    }
+
+    @Test
+    fun emptySectionsAndTextYieldUnusablePlanWithoutOmission() {
         val plan = planOf(emptyList(), "")
-        // empty sections + empty text: the plan is still unusable, and the
-        // caller-side rule (canonicalReport.isNotEmpty()) marks no omission.
+        // The plan is unusable, but the caller-side rule
+        // (canonicalReport.isNotEmpty()) marks no omission for an empty report.
         assertTrue(plan.unusableSections)
         assertTrue(plan.blocks.isEmpty())
     }

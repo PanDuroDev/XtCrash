@@ -3,9 +3,11 @@ package io.github.soufianodev.xtcrash.report.internal
 import io.github.soufianodev.xtcrash.CrashActivity
 import io.github.soufianodev.xtcrash.config.CrashConfig
 import io.github.soufianodev.xtcrash.report.ReportSection
+import io.github.soufianodev.xtcrash.report.ReportSnapshot
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 class CanonicalReportTest {
@@ -236,6 +238,31 @@ class CanonicalReportTest {
         val device = snapshot.sections.first { it.kind == ReportSection.Kind.DEVICE }.text
         assertTrue(device.startsWith("Package: com.example.app\n"))
         assertFalse(device.contains("fake.app"))
+        assertEquals(snapshot.text, snapshot.sections.joinToString("") { it.text })
+    }
+
+    @Test
+    fun snapshotSectionsAreCopiedSoMutableInputCannotInvalidateText() {
+        val source = CanonicalReport.buildSnapshot(config(), provider(), facts()).sections.toMutableList()
+        val snapshot = ReportSnapshot(source.joinToString("") { it.text }, source)
+        // Mutating the caller's list after construction...
+        source.clear()
+        // ...must not change the snapshot or let text and sections disagree.
+        assertTrue(snapshot.sections.isNotEmpty())
+        assertEquals(snapshot.text, snapshot.sections.joinToString("") { it.text })
+    }
+
+    @Test
+    fun snapshotSectionsListCannotBeMutatedByCaller() {
+        val snapshot = CanonicalReport.buildSnapshot(config(), provider(), facts())
+        @Suppress("UNCHECKED_CAST")
+        val exposed = snapshot.sections as MutableList<ReportSection>
+        try {
+            exposed.clear()
+            fail("sections must not be mutable")
+        } catch (e: UnsupportedOperationException) {
+            // expected: the snapshot wraps its section list unmodifiable
+        }
         assertEquals(snapshot.text, snapshot.sections.joinToString("") { it.text })
     }
 }

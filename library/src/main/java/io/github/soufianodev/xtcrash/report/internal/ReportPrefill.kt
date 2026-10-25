@@ -44,6 +44,13 @@ internal object ReportPrefill {
         if (sections.isNullOrEmpty() || sections.joinToString("") { it.text } != canonicalReport) {
             return Plan(emptyList(), unusableSections = true)
         }
+        // A repeated kind would make any one-section-per-kind projection drop
+        // content while the concatenation check still passed, so it is treated
+        // as an inconsistent section list rather than silently shortened.
+        val kinds = sections.map { it.kind }
+        if (kinds.toSet().size != kinds.size) {
+            return Plan(emptyList(), unusableSections = true)
+        }
         val byKind = sections.associateBy { it.kind }
         val blocks = PRIORITY.mapNotNull { kind ->
             byKind[kind]?.takeIf { it.text.isNotEmpty() }?.let { PrefillShortener.Block(it.text) }

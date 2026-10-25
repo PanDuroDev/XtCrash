@@ -19,6 +19,7 @@
     <string name="xtcrash_default_report_subject_no_id">Crash report - %1$s</string>
     <string name="xtcrash_no_share_app_found">No app found to share the report. Crash details were copied instead.</string>
     <string name="xtcrash_report_not_copied">Could not copy the report to the clipboard.</string>
+    <string name="xtcrash_report_copied">The full report was copied to the clipboard.</string>
     <string name="xtcrash_report_no_email_client">No email app found on this device.</string>
     <string name="xtcrash_report_email_copied">The full report was copied to the clipboard — paste it into an email and send it manually.</string>
     <string name="xtcrash_report_url_privacy_title">Send report via %1$s?</string>
@@ -35,5 +36,4 @@
     <string name="xtcrash_report_config_invalid">Reporting is not configured correctly for this destination. The report is still available to copy or share.</string>
     <string name="xtcrash_report_open_issue">Open issue page</string>
     <string name="xtcrash_report_copy">Copy report</string>
-    <string name="xtcrash_report_email_subject_format">Crash report - %1$s - %2$s</string>
 </resources>

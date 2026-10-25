@@ -21,9 +21,6 @@ internal class ReportRequestOwnership {
     private var confirmation: PreparedReport? = null
     private var invalidated: Boolean = false
 
-    /** True once this dispatcher was replaced or destroyed; it must go quiet. */
-    val isInvalidated: Boolean get() = invalidated
-
     /** Attempts to open the in-flight window for a new user-initiated request. */
     fun tryBegin(): Boolean {
         if (inFlight || invalidated) {
@@ -47,19 +44,22 @@ internal class ReportRequestOwnership {
         inFlight = false
     }
 
-    /** Stages the confirmation for the active request's web navigation. */
-    fun stageConfirmation(prepared: PreparedReport) {
-        if (!invalidated) {
+    /** Stages the confirmation for [requestId]'s web navigation. */
+    fun stageConfirmation(requestId: String, prepared: PreparedReport) {
+        if (owns(requestId)) {
             confirmation = prepared
         }
     }
 
     /**
-     * Consumes the pending confirmation, returning it exactly once. A stale,
-     * cancelled, replaced, invalidated, or already-consumed confirm gets null
-     * and must not navigate.
+     * Consumes the pending confirmation for [requestId], returning it exactly
+     * once. A stale, cancelled, superseded, invalidated, or already-consumed
+     * confirm gets null and must not navigate.
      */
-    fun consumeConfirmation(): PreparedReport? {
+    fun consumeConfirmation(requestId: String): PreparedReport? {
+        if (!owns(requestId)) {
+            return null
+        }
         val staged = confirmation
         confirmation = null
         return staged
@@ -73,7 +73,8 @@ internal class ReportRequestOwnership {
     /**
      * Discards everything owned by the previous request: late worker results,
      * queued listener notifications, destination side effects, and pending
-     * confirmations all become no-ops.
+     * confirmations all become no-ops. This only drops local effects — it
+     * never implies that an external handler's acceptance was cancelled.
      */
     fun invalidate() {
         invalidated = true
