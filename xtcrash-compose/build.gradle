@@ -1,6 +1,10 @@
+import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
+import java.net.URI
+
 apply plugin: 'com.android.library'
 apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 apply plugin: 'maven-publish'
+apply plugin: 'org.jetbrains.dokka'
 group = 'com.github.SoufianoDev'
 
 ext {
@@ -65,3 +69,35 @@ dependencies {
 }
 
 apply from: "${rootProject.projectDir}/scripts/publish-module.gradle"
+
+
+dokka {
+    dokkaPublications {
+        html {
+            moduleName.set('XtCrash Compose')
+            moduleVersion.set(android.defaultConfig.versionName)
+            outputDirectory.set(file("${rootProject.projectDir}/docs/public/api/compose"))
+            failOnWarning.set(false)
+        }
+    }
+    dokkaSourceSets {
+        // With AGP's built-in Kotlin support, Dokka can expose a generic JVM
+        // source set alongside the Android release source set for the same files.
+        configureEach {
+            if (name == 'jvm') {
+                suppress.set(true)
+            } else if (name == 'release') {
+                documentedVisibilities.set([VisibilityModifier.Public] as Set)
+                perPackageOption {
+                    matchingRegex.set('.*\\.internal(\\..*)?')
+                    suppress.set(true)
+                }
+                sourceLink {
+                    localDirectory.set(file('src/main/java'))
+                    remoteUrl.set(new URI('https://github.com/SoufianoDev/XtCrash/blob/master/xtcrash-compose/src/main/java'))
+                    remoteLineSuffix.set('#L')
+                }
+            }
+        }
+    }
+}

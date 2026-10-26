@@ -40,6 +40,7 @@ import java.util.UUID
  */
 object CrashActivity {
 
+    /** Current XtCrash library version string. */
     const val VERSION = "1.0.0"
 
     private const val TAG = "XtCrash"
@@ -99,6 +100,13 @@ object CrashActivity {
         }
     }
 
+    /**
+     * Installs the runtime crash handler. Called by the library's initialization provider;
+     * application code must not call this restricted entry point directly.
+     *
+     * @param context Context used to obtain the application and register lifecycle callbacks.
+     * @suppress
+     */
     @JvmStatic
     @Synchronized
     @RestrictTo(RestrictTo.Scope.LIBRARY)
@@ -303,41 +311,49 @@ object CrashActivity {
         return stackTraceString
     }
 
+    /** Returns the stack trace carried by a crash intent, or null when it was not included. */
     @JvmStatic
     fun getStackTraceFromIntent(intent: Intent): String? {
         return intent.getStringExtra(EXTRA_STACK_TRACE)
     }
 
+    /** Returns the captured activity lifecycle log, or null when no log is available. */
     @JvmStatic
     fun getActivityLogFromIntent(intent: Intent): String? {
         return intent.getStringExtra(EXTRA_ACTIVITY_LOG)
     }
 
+    /** Returns the crashing thread name, or "unknown" when the extra is absent. */
     @JvmStatic
     fun getThreadNameFromIntent(intent: Intent): String {
         return intent.getStringExtra(EXTRA_THREAD_NAME) ?: "unknown"
     }
 
+    /** Returns the crash ID carried by the intent, or "unknown" when absent. */
     @JvmStatic
     fun getCrashIdFromIntent(intent: Intent): String {
         return intent.getStringExtra(EXTRA_CRASH_ID) ?: "unknown"
     }
 
+    /** Returns the crashing exception's class name, or "unknown" when absent. */
     @JvmStatic
     fun getThrowableClassFromIntent(intent: Intent): String {
         return intent.getStringExtra(EXTRA_THROWABLE_CLASS) ?: "unknown"
     }
 
+    /** Returns the exception message, or null when absent. */
     @JvmStatic
     fun getThrowableMessageFromIntent(intent: Intent): String? {
         return intent.getStringExtra(EXTRA_THROWABLE_MESSAGE)
     }
 
+    /** Returns the crash timestamp, falling back to a current formatted timestamp when absent. */
     @JvmStatic
     fun getCrashDateFromIntent(intent: Intent): String {
         return intent.getStringExtra(EXTRA_CRASH_DATE) ?: createDateFormat().format(Date())
     }
 
+    /** Returns the serialized crash configuration, falling back to the current configuration if the intent does not contain one. May emit the previous stack trace when configured. */
     @JvmStatic
     fun getConfigFromIntent(intent: Intent): CrashConfig {
         val fromIntent = if (Build.VERSION.SDK_INT >= 33) {
@@ -443,6 +459,7 @@ object CrashActivity {
         killCurrentProcess()
     }
 
+    /** Restarts the app using the configured or manifest-resolved target. If no target is found, closes the app instead. */
     @JvmStatic
     fun restartApplication(activity: Activity, crashConfig: CrashConfig) {
         var restartActivityClass: Class<out Activity>? = crashConfig.restartActivityClass
@@ -459,6 +476,7 @@ object CrashActivity {
         restartApplicationWithIntentInternal(activity, intent, crashConfig)
     }
 
+    /** Restarts the app using the supplied target intent and then terminates the current process. */
     @JvmStatic
     fun restartApplicationWithIntent(activity: Activity,
                                      intent: Intent,
@@ -466,6 +484,7 @@ object CrashActivity {
         restartApplicationWithIntentInternal(activity, intent, crashConfig)
     }
 
+    /** Notifies the configured lifecycle listener, finishes the error activity, and terminates the current process. */
     @JvmStatic
     fun closeApplication(activity: Activity, crashConfig: CrashConfig) {
         notifyCloseAppFromErrorActivity(crashConfig)
@@ -473,12 +492,23 @@ object CrashActivity {
         killCurrentProcess()
     }
 
+    /**
+     * Returns the runtime configuration currently used by the crash handler.
+     *
+     * @suppress
+     */
     @JvmStatic
     @RestrictTo(RestrictTo.Scope.LIBRARY)
     fun getConfig(): CrashConfig {
         return config
     }
 
+    /**
+     * Replaces the runtime configuration and validates a configured custom error activity.
+     *
+     * @param crashConfig Configuration to install for subsequent crash handling.
+     * @suppress
+     */
     @JvmStatic
     @RestrictTo(RestrictTo.Scope.LIBRARY)
     fun setConfig(crashConfig: CrashConfig) {
@@ -672,11 +702,19 @@ object CrashActivity {
         System.exit(10)
     }
 
+    /**
+     * Receives lifecycle signals from the error-screen flow. Implementations are serialized
+     * with CrashConfig, so use a top-level or static serializable class and do not depend on
+     * live objects from the crashing process.
+     */
     interface EventListener : Serializable {
+        /** Called when XtCrash is about to launch the configured error activity. */
         fun onLaunchErrorActivity()
 
+        /** Called when the error screen initiates the configured restart behavior. */
         fun onRestartAppFromErrorActivity()
 
+        /** Called when the error screen initiates close behavior. */
         fun onCloseAppFromErrorActivity()
     }
 }

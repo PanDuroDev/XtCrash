@@ -19,3 +19,6 @@ HowToPublish.txt
 docs/node_modules/
 docs/dist/
 docs/.astro/
+
+# Generated Dokka HTML; produced by the docs build and never committed.
+docs/public/api/

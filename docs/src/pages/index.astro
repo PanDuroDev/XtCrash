@@ -1,104 +1,52 @@
 ---
 import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
-import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-const banner = `${import.meta.env.BASE_URL}xtcrash-banner.svg`;
+const base = import.meta.env.BASE_URL;
+const banner = `${base}xtcrash-banner.svg`;
 ---
 
 <StarlightPage
   frontmatter={{
     title: 'XtCrash',
-    description:
-      'Crash recovery and custom error screens for Android apps. Replace the system crash dialog with a configurable, process-isolated error screen.',
+    description: 'A configurable Android crash screen that survives the crashing process.',
   }}
 >
   <img
     src={banner}
-    alt="XtCrash — modern crash recovery for Android"
-    style="border-radius: 0.25rem; width: 100%; height: auto;"
+    alt="XtCrash — crash recovery and custom error screens for Android"
+    style="border-radius: 0.5rem; width: 100%; height: auto;"
   />
 
   <p>
-    XtCrash replaces the Android system crash dialog with a configurable error
-    screen. A content provider installs an uncaught-exception handler at app
-    startup; when a crash happens, the error screen opens in its own process and
-    lets the user restart or close the app, review technical details, copy them
-    to the clipboard, or share a crash report.
+    XtCrash replaces Android's default crash dialog with a configurable error
+    screen in a dedicated process. Developers can offer restart and close
+    actions, technical details, clipboard copying, and user-initiated crash
+    report sharing.
   </p>
 
   <p>
-    The core <code>xtcrash</code> artifact carries no Compose dependency. The
-    optional <code>xtcrash-compose</code> artifact adds a drop-in Compose error
-    activity and a composable error screen. Applications need Android 6.0
-    (API 23) or newer.
+    The core library supports Android API 23+ and has no Compose dependency.
+    The optional <code>xtcrash-compose</code> module provides a hosted Compose
+    activity and a composable screen. Reports are prepared locally; XtCrash
+    does not upload them automatically.
   </p>
 
+  <p><a class="sl-link-button" href={`${base}quickstart/`}>Start with Quick Start</a></p>
+
+  <h2>Choose a guide</h2>
   <CardGrid>
-    <Card title="Process isolation">
-      The error screen runs in a dedicated <code>:xtcrash_error</code> process,
-      so it still renders after the crashing process dies.
-    </Card>
-    <Card title="Serializable payload">
-      Config, stack trace, and crash metadata travel through the launch intent;
-      nothing is held in memory across process boundaries.
-    </Card>
-    <Card title="No network">
-      Reports are assembled on device and shared through Android share intents.
-      The library does not send data anywhere on its own.
-    </Card>
-    <Card title="Handler-chain friendly">
-      Initialize XtCrash first, then Crashlytics, ACRA, or another handler. Any
-      previously installed uncaught-exception handler is preserved.
-    </Card>
-  </CardGrid>
-
-  <h2>Start here</h2>
-
-  <ul>
-    <li><a href="/XtCrash/quickstart/">Quick start</a>: install, configure, and
-      trigger a first test crash.</li>
-    <li><a href="/XtCrash/configuration/">Configuration</a>: complete
-      <code>CrashConfig</code> reference.</li>
-    <li><a href="/XtCrash/introduction/">Introduction</a>: artifact map and
-      non-goals.</li>
-  </ul>
-
-  <h2>Guides</h2>
-
-  <CardGrid>
-    <LinkCard
-      title="Custom error screen"
-      href="/XtCrash/custom-error-screen/"
-      description="Subclass the error activity, register it in the manifest, and use the intent helpers."
-    />
-    <LinkCard
-      title="Jetpack Compose"
-      href="/XtCrash/compose/"
-      description="Drop-in activity, composable screen, and custom Compose designs."
-    />
+    <LinkCard title="Configuration" href={`${base}configuration/`} description="Set screen behavior, text, colors, logging, and report options." />
+    <LinkCard title="Custom Error Screen" href={`${base}custom-error-screen/`} description="Register a custom activity and consume the serialized crash payload." />
+    <LinkCard title="Crash Reports" href={`${base}crash-reports/`} description="Configure destinations, privacy confirmation, URL limits, and custom handlers." />
+    <LinkCard title="Jetpack Compose" href={`${base}compose/`} description="Compare the hosted activity, config-driven screen, and custom UI paths." />
+    <LinkCard title="Logging and Event Callbacks" href={`${base}logging-and-events/`} description="Understand diagnostic logging and crash-screen lifecycle callbacks." />
+    <LinkCard title="API Reference" href={`${base}api-reference/`} description="Browse generated API documentation for the core and Compose modules." />
   </CardGrid>
 
   <h2>Project links</h2>
-
   <CardGrid>
-    <LinkCard
-      title="GitHub repository"
-      href="https://github.com/SoufianoDev/XtCrash"
-      description="Sources, issues, releases, and build instructions."
-    />
-    <LinkCard
-      title="Contributing"
-      href="https://github.com/SoufianoDev/XtCrash/blob/master/CONTRIBUTING.md"
-      description="Development workflow, module layout, and pull-request process."
-    />
+    <LinkCard title="GitHub repository" href="https://github.com/SoufianoDev/XtCrash" description="Source code, issues, and contribution guidance." />
+    <LinkCard title="Contributing" href="https://github.com/SoufianoDev/XtCrash/blob/master/CONTRIBUTING.md" description="Development workflow and pull-request expectations." />
   </CardGrid>
-
-  <p>
-    XtCrash descends from
-    <a href="https://github.com/TutorialsAndroid/crashx">CrashX</a>, which itself
-    descends from
-    <a href="https://github.com/Ereza/CustomActivityOnCrash">CustomActivityOnCrash</a>
-    by Eduard Ereza Martínez. The chain is recorded in the repository's
-    <code>NOTICE</code> file.
-  </p>
 </StarlightPage>

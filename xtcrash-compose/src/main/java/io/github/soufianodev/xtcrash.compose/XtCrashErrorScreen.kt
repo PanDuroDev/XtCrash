@@ -65,6 +65,12 @@ import io.github.soufianodev.xtcrash.report.internal.ReportDispatcher
  *
  * <p>Reporting shares the same preparation and dispatch pipeline as the XML screen
  * ([ReportDispatcher]), so both interfaces stay behaviorally equivalent.</p>
+ *
+ * @param config Configuration used for labels, colors, visibility, restart behavior, and reporting.
+ * @param errorDetails Canonical report text or technical details for the current crash.
+ * @param crashId Current crash identifier; defaults to an empty string when not supplied.
+ * @param subject Optional report subject override. When null, the subject is resolved from [CrashActivity.getReportSubject].
+ * @param sections Optional structured report sections used by report dispatch; null delegates section handling to the dispatcher.
  */
 @Composable
 fun XtCrashErrorScreen(
