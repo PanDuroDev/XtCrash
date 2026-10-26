@@ -10,6 +10,10 @@ export default defineConfig({
     starlight({
       title: 'XtCrash',
       description: 'Crash recovery and custom error screens for Android apps.',
+      logo: {
+        src: './src/assets/xtcrash-mark.svg',
+        alt: 'XtCrash',
+      },
       lastUpdated: true,
       editLink: { baseUrl: 'https://github.com/SoufianoDev/XtCrash/edit/master/docs/' },
       head: [
