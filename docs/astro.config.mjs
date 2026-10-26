@@ -27,15 +27,21 @@ export default defineConfig({
       sidebar: [
         {
           label: 'Getting started',
-          items: ['introduction', 'quickstart'],
+          items: ['quickstart'],
         },
         {
           label: 'Guides',
           items: [
             'configuration',
             'custom-error-screen',
+            'crash-reports',
             'compose',
+            'logging-and-events',
           ],
+        },
+        {
+          label: 'Reference',
+          items: ['api-reference'],
         },
       ],
       customCss: ['./src/styles/custom.css'],
