@@ -45,6 +45,12 @@ for (const file of files) {
     }
 
     let pathname = decodeURIComponent(resolved.pathname);
+    const isAbsolutePath = target.startsWith('/') && !target.startsWith('//');
+    if (isAbsolutePath && pathname !== basePath && !pathname.startsWith(basePath + '/')) {
+      errors.push(route + ': absolute internal link must include site base ' + basePath + ': ' + target);
+      continue;
+    }
+
     if (pathname.startsWith(basePath + '/api/')) {
       const generated = path.join(publicRoot, pathname.slice(basePath.length + 1));
       try { await access(generated); }
