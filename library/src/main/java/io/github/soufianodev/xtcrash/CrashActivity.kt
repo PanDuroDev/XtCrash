@@ -63,8 +63,8 @@ object CrashActivity {
 
     private var application: Application? = null
     private var config = CrashConfig()
-    // Protects every read and write of the activity log across lifecycle and crash threads.
-    private val activityLogLock = Any()
+    // Guards activity lifecycle state shared with crash handling, including the activity log.
+    private val activityStateLock = Any()
     private val activityLog: Deque<String> = ArrayDeque()
     private var lastActivityCreated = WeakReference<Activity?>(null)
     private var isInBackground = true
@@ -189,7 +189,8 @@ object CrashActivity {
                 return
             }
 
-            if (config.backgroundMode == CrashConfig.BACKGROUND_MODE_SHOW_CUSTOM || !isInBackground) {
+            if (config.backgroundMode == CrashConfig.BACKGROUND_MODE_SHOW_CUSTOM
+                    || synchronized(activityStateLock) { !isInBackground }) {
                 launchErrorActivity(thread, throwable, errorActivityClass)
             } else if (config.backgroundMode == CrashConfig.BACKGROUND_MODE_CRASH) {
                 callOldHandlerOrKill(oldHandler, thread, throwable)
@@ -246,14 +247,18 @@ object CrashActivity {
 
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 if (!isXtCrashErrorActivity(activity)) {
-                    lastActivityCreated = WeakReference(activity)
+                    synchronized(activityStateLock) {
+                        lastActivityCreated = WeakReference(activity)
+                    }
                 }
                 appendActivityLog(dateFormat.format(Date()) + ": " + activity.javaClass.simpleName + " created\n")
             }
 
             override fun onActivityStarted(activity: Activity) {
-                currentlyStartedActivities++
-                isInBackground = false
+                synchronized(activityStateLock) {
+                    currentlyStartedActivities++
+                    isInBackground = false
+                }
             }
 
             override fun onActivityResumed(activity: Activity) {
@@ -265,8 +270,10 @@ object CrashActivity {
             }
 
             override fun onActivityStopped(activity: Activity) {
-                currentlyStartedActivities = (currentlyStartedActivities - 1).coerceAtLeast(0)
-                isInBackground = currentlyStartedActivities == 0
+                synchronized(activityStateLock) {
+                    currentlyStartedActivities = (currentlyStartedActivities - 1).coerceAtLeast(0)
+                    isInBackground = currentlyStartedActivities == 0
+                }
             }
 
             override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
@@ -290,7 +297,7 @@ object CrashActivity {
             return
         }
 
-        synchronized(activityLogLock) {
+        synchronized(activityStateLock) {
             while (activityLog.size >= config.maxActivityLogEntries) {
                 activityLog.pollFirst()
             }
@@ -300,7 +307,7 @@ object CrashActivity {
 
     private fun snapshotActivityLog(): String {
         // Copy while holding the lock; formatting the snapshot does not need the lock.
-        val entries = synchronized(activityLogLock) {
+        val entries = synchronized(activityStateLock) {
             activityLog.toList()
         }
         return entries.joinToString("")
@@ -632,11 +639,14 @@ object CrashActivity {
     }
 
     private fun finishLastActivity() {
-        val lastActivity = lastActivityCreated.get()
-        if (lastActivity != null) {
-            lastActivity.finish()
-            lastActivityCreated.clear()
+        val lastActivity = synchronized(activityStateLock) {
+            lastActivityCreated.get().also {
+                lastActivityCreated.clear()
+            }
         }
+
+        // Do not call Android APIs while holding the shared-state lock.
+        lastActivity?.finish()
     }
 
     private fun callOldHandlerOrKill(oldHandler: Thread.UncaughtExceptionHandler?,
