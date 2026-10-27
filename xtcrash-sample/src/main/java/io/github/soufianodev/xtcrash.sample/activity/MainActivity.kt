@@ -169,7 +169,14 @@ class MainActivity : AppCompatActivity() {
                 // config modes inherit these through the live-config copy.
                 .loggingEnabled(true)
                 .logListener(DemoCrashLogListener())
-                .backgroundMode(CrashConfig.BACKGROUND_MODE_SHOW_CUSTOM)
+                .backgroundMode(
+                        if (intent.getBooleanExtra(EXTRA_TRIGGER_BACKGROUND_CRASH, false)) {
+                            // Exercise the synchronized foreground-state read in CrashActivity.
+                            CrashConfig.BACKGROUND_MODE_SILENT
+                        } else {
+                            CrashConfig.BACKGROUND_MODE_SHOW_CUSTOM
+                        }
+                )
                 .showErrorDetails(true)
                 .showRestartButton(true)
                 .showCloseButton(true)
