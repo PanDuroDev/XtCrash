@@ -26,9 +26,7 @@ import java.io.StringWriter
 import java.lang.ref.WeakReference
 import java.text.DateFormat
 import java.text.SimpleDateFormat
-import java.util.ArrayDeque
 import java.util.Date
-import java.util.Deque
 import java.util.Locale
 import java.util.UUID
 
@@ -65,7 +63,7 @@ object CrashActivity {
     private var config = CrashConfig()
     // Guards activity lifecycle state shared with crash handling, including the activity log.
     private val activityStateLock = Any()
-    private val activityLog: Deque<String> = ArrayDeque()
+    private val activityLog = ActivityLog(activityStateLock)
     private var lastActivityCreated = WeakReference<Activity?>(null)
     private var isInBackground = true
     private var lifecycleCallbacksRegistered = false
@@ -297,21 +295,10 @@ object CrashActivity {
             return
         }
 
-        synchronized(activityStateLock) {
-            while (activityLog.size >= config.maxActivityLogEntries) {
-                activityLog.pollFirst()
-            }
-            activityLog.offerLast(line)
-        }
+        activityLog.append(line, config.maxActivityLogEntries)
     }
 
-    private fun snapshotActivityLog(): String {
-        // Copy while holding the lock; formatting the snapshot does not need the lock.
-        val entries = synchronized(activityStateLock) {
-            activityLog.toList()
-        }
-        return entries.joinToString("")
-    }
+    private fun snapshotActivityLog(): String = activityLog.snapshot()
 
     private fun throwableToString(throwable: Throwable, maxSize: Int): String {
         val stringWriter = StringWriter()
