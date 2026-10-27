@@ -15,6 +15,9 @@ import io.github.soufianodev.xtcrash.config.CrashConfig
 import io.github.soufianodev.xtcrash.sample.DemoCrashLogListener
 import io.github.soufianodev.xtcrash.sample.R
 
+private const val EXTRA_TRIGGER_BACKGROUND_CRASH =
+        "io.github.soufianodev.xtcrash.sample.TRIGGER_BACKGROUND_CRASH"
+
 class MainActivity : AppCompatActivity() {
 
     private lateinit var tvCurrentMode: TextView
@@ -26,6 +29,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnNullPointerCrash: Button
     private lateinit var btnArrayCrash: Button
     private lateinit var btnCrashWithActivityLog: Button
+    private lateinit var btnBackgroundThreadCrash: Button
+    private var backgroundThreadCrashTriggered = false
     private lateinit var btnDisableXtCrash: Button
     private lateinit var btnEnableXtCrash: Button
 
@@ -38,6 +43,13 @@ class MainActivity : AppCompatActivity() {
         applyDefaultTestingConfig()
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (intent.getBooleanExtra(EXTRA_TRIGGER_BACKGROUND_CRASH, false)) {
+            startBackgroundThreadCrash()
+        }
+    }
+
     private fun initializeViews() {
         tvCurrentMode = findViewById(R.id.tvCurrentMode)
         btnApplyDebugConfig = findViewById(R.id.btnApplyDebugConfig)
@@ -48,6 +60,7 @@ class MainActivity : AppCompatActivity() {
         btnNullPointerCrash = findViewById(R.id.btnNullPointerCrash)
         btnArrayCrash = findViewById(R.id.btnArrayCrash)
         btnCrashWithActivityLog = findViewById(R.id.btnCrashWithActivityLog)
+        btnBackgroundThreadCrash = findViewById(R.id.btnBackgroundThreadCrash)
         btnDisableXtCrash = findViewById(R.id.btnDisableXtCrash)
         btnEnableXtCrash = findViewById(R.id.btnEnableXtCrash)
     }
@@ -116,6 +129,8 @@ class MainActivity : AppCompatActivity() {
             throw IllegalStateException("XtCrash v7 test crash with activity lifecycle tracking enabled")
         }
 
+        btnBackgroundThreadCrash.setOnClickListener { startBackgroundThreadCrash() }
+
         btnDisableXtCrash.setOnClickListener {
             CrashConfig.Builder.create()
                     .enabled(false)
@@ -128,6 +143,21 @@ class MainActivity : AppCompatActivity() {
             applyDefaultTestingConfig()
             Toast.makeText(this, "XtCrash enabled again.", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    /**
+     * Deliberately crashes a worker thread after the activity is visible. This
+     * exercises the uncaught-exception handler from a non-main thread.
+     */
+    private fun startBackgroundThreadCrash() {
+        if (backgroundThreadCrashTriggered) return
+        backgroundThreadCrashTriggered = true
+
+        Thread({
+            Thread.sleep(750)
+            throw IllegalStateException(
+                    "XtCrash smoke test: uncaught exception from background thread")
+        }, "xtcrash-background-crash-smoke-test").start()
     }
 
     private fun applyDefaultTestingConfig() {
