@@ -23,12 +23,9 @@ import io.github.soufianodev.xtcrash.report.internal.DeviceInfo
 import java.io.PrintWriter
 import java.io.Serializable
 import java.io.StringWriter
-import java.lang.ref.WeakReference
 import java.text.DateFormat
 import java.text.SimpleDateFormat
-import java.util.ArrayDeque
 import java.util.Date
-import java.util.Deque
 import java.util.Locale
 import java.util.UUID
 
@@ -63,8 +60,10 @@ object CrashActivity {
 
     private var application: Application? = null
     private var config = CrashConfig()
-    private val activityLog: Deque<String> = ArrayDeque()
-    private var lastActivityCreated = WeakReference<Activity?>(null)
+    // Guards activity lifecycle state shared with crash handling, including the activity log.
+    private val activityStateLock = Any()
+    private val activityLog = ActivityLog(activityStateLock)
+    private val lastActivityCreated = WeakReferenceSlot<Activity>(activityStateLock)
     private var isInBackground = true
     private var lifecycleCallbacksRegistered = false
 
@@ -187,7 +186,8 @@ object CrashActivity {
                 return
             }
 
-            if (config.backgroundMode == CrashConfig.BACKGROUND_MODE_SHOW_CUSTOM || !isInBackground) {
+            if (config.backgroundMode == CrashConfig.BACKGROUND_MODE_SHOW_CUSTOM
+                    || synchronized(activityStateLock) { !isInBackground }) {
                 launchErrorActivity(thread, throwable, errorActivityClass)
             } else if (config.backgroundMode == CrashConfig.BACKGROUND_MODE_CRASH) {
                 callOldHandlerOrKill(oldHandler, thread, throwable)
@@ -244,14 +244,16 @@ object CrashActivity {
 
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 if (!isXtCrashErrorActivity(activity)) {
-                    lastActivityCreated = WeakReference(activity)
+                    lastActivityCreated.set(activity)
                 }
                 appendActivityLog(dateFormat.format(Date()) + ": " + activity.javaClass.simpleName + " created\n")
             }
 
             override fun onActivityStarted(activity: Activity) {
-                currentlyStartedActivities++
-                isInBackground = false
+                synchronized(activityStateLock) {
+                    currentlyStartedActivities++
+                    isInBackground = false
+                }
             }
 
             override fun onActivityResumed(activity: Activity) {
@@ -263,8 +265,10 @@ object CrashActivity {
             }
 
             override fun onActivityStopped(activity: Activity) {
-                currentlyStartedActivities = (currentlyStartedActivities - 1).coerceAtLeast(0)
-                isInBackground = currentlyStartedActivities == 0
+                synchronized(activityStateLock) {
+                    currentlyStartedActivities = (currentlyStartedActivities - 1).coerceAtLeast(0)
+                    isInBackground = currentlyStartedActivities == 0
+                }
             }
 
             override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {
@@ -287,15 +291,11 @@ object CrashActivity {
         if (!config.isTrackActivities || !config.isIncludeActivityLog) {
             return
         }
-        while (activityLog.size >= config.maxActivityLogEntries) {
-            activityLog.pollFirst()
-        }
-        activityLog.offerLast(line)
+
+        activityLog.append(line, config.maxActivityLogEntries)
     }
 
-    private fun snapshotActivityLog(): String {
-        return activityLog.joinToString("")
-    }
+    private fun snapshotActivityLog(): String = activityLog.snapshot()
 
     private fun throwableToString(throwable: Throwable, maxSize: Int): String {
         val stringWriter = StringWriter()
@@ -623,11 +623,9 @@ object CrashActivity {
     }
 
     private fun finishLastActivity() {
-        val lastActivity = lastActivityCreated.get()
-        if (lastActivity != null) {
-            lastActivity.finish()
-            lastActivityCreated.clear()
-        }
+        // take() atomically captures and clears the weak reference under the shared-state lock.
+        // Call Android APIs only after the lock has been released.
+        lastActivityCreated.take()?.finish()
     }
 
     private fun callOldHandlerOrKill(oldHandler: Thread.UncaughtExceptionHandler?,
