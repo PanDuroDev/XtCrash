@@ -63,6 +63,8 @@ object CrashActivity {
 
     private var application: Application? = null
     private var config = CrashConfig()
+    // Protects every read and write of the activity log across lifecycle and crash threads.
+    private val activityLogLock = Any()
     private val activityLog: Deque<String> = ArrayDeque()
     private var lastActivityCreated = WeakReference<Activity?>(null)
     private var isInBackground = true
@@ -287,14 +289,21 @@ object CrashActivity {
         if (!config.isTrackActivities || !config.isIncludeActivityLog) {
             return
         }
-        while (activityLog.size >= config.maxActivityLogEntries) {
-            activityLog.pollFirst()
+
+        synchronized(activityLogLock) {
+            while (activityLog.size >= config.maxActivityLogEntries) {
+                activityLog.pollFirst()
+            }
+            activityLog.offerLast(line)
         }
-        activityLog.offerLast(line)
     }
 
     private fun snapshotActivityLog(): String {
-        return activityLog.joinToString("")
+        // Copy while holding the lock; formatting the snapshot does not need the lock.
+        val entries = synchronized(activityLogLock) {
+            activityLog.toList()
+        }
+        return entries.joinToString("")
     }
 
     private fun throwableToString(throwable: Throwable, maxSize: Int): String {
