@@ -23,7 +23,6 @@ import io.github.soufianodev.xtcrash.report.internal.DeviceInfo
 import java.io.PrintWriter
 import java.io.Serializable
 import java.io.StringWriter
-import java.lang.ref.WeakReference
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -64,7 +63,7 @@ object CrashActivity {
     // Guards activity lifecycle state shared with crash handling, including the activity log.
     private val activityStateLock = Any()
     private val activityLog = ActivityLog(activityStateLock)
-    private var lastActivityCreated = WeakReference<Activity?>(null)
+    private val lastActivityCreated = WeakReferenceSlot<Activity>(activityStateLock)
     private var isInBackground = true
     private var lifecycleCallbacksRegistered = false
 
@@ -245,9 +244,7 @@ object CrashActivity {
 
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
                 if (!isXtCrashErrorActivity(activity)) {
-                    synchronized(activityStateLock) {
-                        lastActivityCreated = WeakReference(activity)
-                    }
+                    lastActivityCreated.set(activity)
                 }
                 appendActivityLog(dateFormat.format(Date()) + ": " + activity.javaClass.simpleName + " created\n")
             }
@@ -626,14 +623,9 @@ object CrashActivity {
     }
 
     private fun finishLastActivity() {
-        val lastActivity = synchronized(activityStateLock) {
-            lastActivityCreated.get().also {
-                lastActivityCreated.clear()
-            }
-        }
-
-        // Do not call Android APIs while holding the shared-state lock.
-        lastActivity?.finish()
+        // take() atomically captures and clears the weak reference under the shared-state lock.
+        // Call Android APIs only after the lock has been released.
+        lastActivityCreated.take()?.finish()
     }
 
     private fun callOldHandlerOrKill(oldHandler: Thread.UncaughtExceptionHandler?,
