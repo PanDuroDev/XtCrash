@@ -32,7 +32,7 @@ jobs:
           packages: 'platform-tools'
 
       - name: Install compile SDK
-        run: sdkmanager --install "platforms;android-37"
+        run: sdkmanager --install "platforms;android-37.0"
 
       - name: Run library unit tests
         run: ./gradlew --no-daemon :library:testDebugUnitTest
@@ -63,7 +63,7 @@ jobs:
           packages: 'platform-tools'
 
       - name: Install compile SDK
-        run: sdkmanager --install "platforms;android-37"
+        run: sdkmanager --install "platforms;android-37.0"
 
       - name: Build sample application
         run: ./gradlew --no-daemon :xtcrash-sample:assembleDebug
