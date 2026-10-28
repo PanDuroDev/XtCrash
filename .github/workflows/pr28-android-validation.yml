@@ -1,0 +1,24 @@
+name: PR #28 Android validation (temporary)
+
+on:
+  push:
+    branches: [fix/issue-25-http-warning]
+
+permissions:
+  contents: read
+
+jobs:
+  android-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Run Android unit tests and assemble tasks
+        run: ./gradlew --no-daemon :library:testDebugUnitTest :library:assembleDebug :xtcrash-compose:assembleDebug
