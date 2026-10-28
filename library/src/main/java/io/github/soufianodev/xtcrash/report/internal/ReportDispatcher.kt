@@ -590,21 +590,21 @@ class ReportDispatcher(
             )
         }
         val destinationUrl = preview.destinationUrl
-        var message = context.getString(
+        val manualPasteNote = if (prepared.prefillOmitsReport) {
+            context.getString(
+                if (prepared.reportCopiedToClipboard) R.string.xtcrash_report_manual_paste
+                else R.string.xtcrash_report_manual_paste_not_copied,
+            )
+        } else {
+            null
+        }
+        val message = context.getString(
             R.string.xtcrash_report_url_privacy_destination,
             destinationLabel,
             destinationUrl,
             details,
         )
-        if (prepared.prefillOmitsReport) {
-            val note = if (prepared.reportCopiedToClipboard) {
-                context.getString(R.string.xtcrash_report_manual_paste)
-            } else {
-                context.getString(R.string.xtcrash_report_manual_paste_not_copied)
-            }
-            message += "\n\n" + note
-        }
-        return message
+        return IssueUrlPrivacyConfirmationComposer.compose(manualPasteNote, message)
     }
 
     /**
