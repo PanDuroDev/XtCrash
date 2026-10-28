@@ -118,7 +118,7 @@ class ReportDispatcher(
      * Cleared when that confirmation is consumed, so explicit fallback actions
      * cannot accidentally invoke the handler a second time.
      */
-    private var handlerConfirmationRequestId: String? = null
+    private val handlerConfirmation = ReportHandlerConfirmationState()
 
     fun setListener(listener: Listener?) {
         this.listener = listener
@@ -134,7 +134,7 @@ class ReportDispatcher(
         if (!ownership.tryBegin()) {
             return
         }
-        handlerConfirmationRequestId = null
+        handlerConfirmation.clear()
         val requestId = UUID.randomUUID().toString()
         ownership.beginRequest(requestId)
         currentRequestId = requestId
@@ -147,7 +147,7 @@ class ReportDispatcher(
      * tap can start a new request.
      */
     fun cancelPending() {
-        handlerConfirmationRequestId = null
+        handlerConfirmation.clear()
         ownership.releaseInFlight()
         ownership.clearConfirmation()
     }
@@ -160,7 +160,7 @@ class ReportDispatcher(
      * that an external handler's acceptance was cancelled or rolled back.
      */
     fun invalidate() {
-        handlerConfirmationRequestId = null
+        handlerConfirmation.clear()
         currentRequestId = null
         currentPrepared = null
         ownership.invalidate()
@@ -191,8 +191,7 @@ class ReportDispatcher(
     fun confirmWebUrl() {
         val requestId = currentRequestId ?: return
         val prepared = ownership.consumeConfirmation(requestId) ?: return
-        val shouldInvokeHandler = handlerConfirmationRequestId == requestId
-        handlerConfirmationRequestId = null
+        val shouldInvokeHandler = handlerConfirmation.consumeFor(requestId)
         if (shouldInvokeHandler) {
             val handlerClass = config.reportActionHandlerClass
             if (handlerClass != null) {
@@ -261,7 +260,7 @@ class ReportDispatcher(
                 // Web destinations carry report content in the URL. Do not
                 // pass that URL to an external integration before the user
                 // has reviewed the privacy confirmation.
-                handlerConfirmationRequestId = requestId
+                handlerConfirmation.stage(requestId)
                 performWebAction(requestId, prepared)
             } else {
                 invokeHandler(requestId, handlerClass, prepared)
@@ -551,9 +550,7 @@ class ReportDispatcher(
     private fun performWebAction(requestId: String, prepared: PreparedReport) {
         val url = prepared.url
         if (url == null) {
-            if (handlerConfirmationRequestId == requestId) {
-                handlerConfirmationRequestId = null
-            }
+            handlerConfirmation.clearIf(requestId)
             emit(requestId, ReportState(
                 Phase.CONFIG_INVALID,
                 message = context.getString(R.string.xtcrash_report_config_invalid),
