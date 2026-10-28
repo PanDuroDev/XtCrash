@@ -582,7 +582,7 @@ class ReportDispatcher(
         } else {
             "Fields present in the URL:\n" + fields.joinToString("\n")
         }
-        var message = "Open $scheme://$host on $destinationLabel? The destination may receive any values in this URL before you submit the issue.\n\n$details"
+        val path = uri.encodedPath?.takeIf { it.isNotEmpty() } ?: "/"\n        val destinationUrl = "$scheme://$host$path"\n        var message = "Open the $destinationLabel issue page at $destinationUrl? The destination may receive any values in this URL before you submit the issue.\n\n$details"
         if (prepared.prefillOmitsReport) {
             val note = if (prepared.reportCopiedToClipboard) {
                 context.getString(R.string.xtcrash_report_manual_paste)
