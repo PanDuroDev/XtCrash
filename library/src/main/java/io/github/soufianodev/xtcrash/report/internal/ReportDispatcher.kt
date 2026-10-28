@@ -597,7 +597,7 @@ class ReportDispatcher(
         } else {
             context.getString(
                 R.string.xtcrash_report_url_privacy_fields_present,
-                fields.joinToString("\\n"),
+                fields.joinToString("\n"),
             )
         }
         val path = uri.encodedPath?.takeIf { it.isNotEmpty() } ?: "/"
@@ -614,7 +614,7 @@ class ReportDispatcher(
             } else {
                 context.getString(R.string.xtcrash_report_manual_paste_not_copied)
             }
-            message += "\\n\\n" + note
+            message += "\n\n" + note
         }
         return message
     }
