@@ -26,7 +26,7 @@ Read the [XtCrash documentation website](https://soufianodev.github.io/XtCrash/)
 
 ## Installation status
 
-**The published JitPack coordinates are pending release publication.** The intended version is `v1.0.0`, but do not assume these coordinates resolve until the corresponding tag/artifact is published and verified.
+**Publication of the planned JitPack coordinates is not yet verified.** The intended release version is `v1.0.0`; do not assume these coordinates resolve until the upstream tag exists, JitPack reports a successful build, and an external consumer has resolved and compiled against the artifact.
 
 Core artifact:
 
@@ -40,19 +40,25 @@ Optional Compose artifact:
 implementation("com.github.SoufianoDev.XtCrash:xtcrash-compose:v1.0.0")
 ```
 
-Both use JitPack. Check the [XtCrash JitPack page](https://jitpack.io/#SoufianoDev/XtCrash) and release notes before adopting a published coordinate.
+Both modules are configured for JitPack publication. Check the [XtCrash JitPack page](https://jitpack.io/#SoufianoDev/XtCrash) and release notes for actual build status before adopting a coordinate.
 
-### Build the core AAR from source
+### Build the artifacts from source
 
-Until publication is available, build the library locally:
+Until publication is verified, build the modules locally:
 
 ```bash
 git clone https://github.com/SoufianoDev/XtCrash.git
 cd XtCrash
-./gradlew :library:assembleRelease
+./gradlew :library:assembleRelease :xtcrash-compose:assembleRelease
 ```
 
-The release AAR is produced under `library/build/outputs/aar/`. Use that locally built AAR in your Android project, or include the module in your own Gradle build if your project setup supports it. Build the optional Compose module with `./gradlew :xtcrash-compose:assembleRelease`.
+The release AARs are produced under `library/build/outputs/aar/` and `xtcrash-compose/build/outputs/aar/`. To inspect the Maven publications and their POM metadata locally, run:
+
+```bash
+./gradlew :library:publishToMavenLocal :xtcrash-compose:publishToMavenLocal
+```
+
+This local publication check does not by itself prove that JitPack serves the artifacts or that an external consumer can resolve them.
 
 ## Minimal configuration
 
