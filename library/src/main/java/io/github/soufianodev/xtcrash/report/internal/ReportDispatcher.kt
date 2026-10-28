@@ -584,7 +584,7 @@ class ReportDispatcher(
         } else {
             "Fields present in the URL:\n" + fields.joinToString("\n")
         }
-        var message = "Open $scheme://$host? The destination may receive values in this URL before you submit the issue.\n\n$details"
+        val path = uri.encodedPath?.takeIf { it.isNotEmpty() } ?: "/"\n        var message = "Open $scheme://$host$path? The destination may receive values in this URL before you submit the issue.\n\n$details"
         val carriesPrefillContent = !title.isNullOrEmpty() || !body.isNullOrEmpty()
         if (scheme == "http" && carriesPrefillContent) {
             message += "\n\nWarning: this page uses unencrypted HTTP. The prefilled issue content in the URL may be exposed to networks or intermediaries between you and $host. Use this link only if you trust the connection."
