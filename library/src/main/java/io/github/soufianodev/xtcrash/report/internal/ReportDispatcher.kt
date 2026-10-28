@@ -5,7 +5,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 
@@ -565,32 +564,21 @@ class ReportDispatcher(
     private fun privacyDialogMessage(prepared: PreparedReport): String {
         val url = prepared.url
             ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url)
-        val uri = Uri.parse(url)
+        val preview = IssueUrlPrivacyPreviewBuilder.build(
+            url,
+            prepared.destination ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url),
+        ) ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url)
         val isGitHub = prepared.destination == ReportDestination.GITHUB
         val destinationLabel = context.getString(
             if (isGitHub) R.string.xtcrash_report_destination_github
             else R.string.xtcrash_report_destination_gitlab,
         )
-        val host = buildString {
-            append(uri.host ?: context.getString(R.string.xtcrash_report_url_privacy_unknown_host))
-            if (uri.port != -1) append(":").append(uri.port)
-        }
-        val scheme = uri.scheme ?: context.getString(R.string.xtcrash_report_url_privacy_unknown_scheme)
-        val names = uri.queryParameterNames
-        val titleKey = if (isGitHub) "title" else "issue[title]"
-        val bodyKey = if (isGitHub) "body" else "issue[description]"
         val fields = mutableListOf<String>()
-        if (titleKey in names) {
-            fields += context.getString(
-                R.string.xtcrash_report_url_privacy_title_field,
-                uri.getQueryParameter(titleKey) ?: "",
-            )
+        preview.title?.let {
+            fields += context.getString(R.string.xtcrash_report_url_privacy_title_field, it)
         }
-        if (bodyKey in names) {
-            fields += context.getString(
-                R.string.xtcrash_report_url_privacy_description_field,
-                uri.getQueryParameter(bodyKey) ?: "",
-            )
+        preview.description?.let {
+            fields += context.getString(R.string.xtcrash_report_url_privacy_description_field, it)
         }
         val details = if (fields.isEmpty()) {
             context.getString(R.string.xtcrash_report_url_privacy_no_prefill)
@@ -600,8 +588,7 @@ class ReportDispatcher(
                 fields.joinToString("\n"),
             )
         }
-        val path = uri.encodedPath?.takeIf { it.isNotEmpty() } ?: "/"
-        val destinationUrl = "$scheme://$host$path"
+        val destinationUrl = preview.destinationUrl
         var message = context.getString(
             R.string.xtcrash_report_url_privacy_destination,
             destinationLabel,
