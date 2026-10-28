@@ -89,3 +89,36 @@ The change does not authorize background uploads or silently submit an issue. Th
 - This validates the current XtCrash branch's compilation, listed unit tests, lint task, and debug assembly only. It does **not** validate runtime UI behavior, Android device behavior, the XtMapper draft build, native/JNI, Waydroid, or host/browser transport.
 
 **Release decision:** keep Issue #26 open. The source API is promising and the SDK baseline is compatible, but full compatibility cannot honestly be called 100% until the moving XtMapper draft is stabilized and the real host transport/browser handoff passes the end-to-end checks.
+
+
+## Phase 2 — compile-time integration readiness audit (2026-10-28)
+
+### Latest documentation CI result
+
+The documentation update at commit `8a0e54c241efef7fa5d709b6b3fd32453d094dd6` completed successfully in [XtCrash CI run 40749398767](https://github.com/PanDuroDev/XtCrash/actions/runs/40749398767). The workflow's unit-test/compile and lint/consumer-assembly steps passed. This validates the XtCrash branch at that commit; it does not validate cross-project runtime integration.
+
+### Additional static checks against XtMapper PR #5 head
+
+The following source files were re-read at the exact tested head `b8f102a7ab1e6202c423c0c021b18053ac02495b`:
+
+- `app/build.gradle`: no XtCrash dependency is declared. The app uses `minSdk 25`, Java 21 source/target compatibility, core-library desugaring, and R8/minification for release. The build config alone does not establish that XtCrash's release artifact or consumer rules work under minification.
+- `app/src/main/AndroidManifest.xml`: no merged XtCrash components can be present from a dependency that is not declared. The manifest currently declares the app's `.App` application class and the existing app services/activities.
+- `app/src/main/java/xtr/keymapper/App.kt`: `Application.onCreate()` initializes `XtLogger` and logs startup. It does not configure XtCrash. Keep this initialization behavior intact when designing the integration.
+- `settings.gradle`: JitPack is listed as a dependency repository, but that is not evidence that the planned XtCrash coordinates resolve, that a release tag exists, or that an external consumer can compile.
+
+### Phase 2 decision
+
+**Status: BLOCKED before code integration; no XtMapper source changed.** The next safe implementation step is not to guess dependency coordinates or add an unverified provider. First verify the published artifact coordinates and consumer rules, then create an isolated integration branch in the integration owner's XtMapper fork. On that branch, add only the XtCrash core dependency, inspect the merged manifest, compile debug and minified release, and add a consumer-level test. The upstream PR remains a draft and must not be treated as the integration workspace.
+
+The search for `PanDuroDev/XtMapper` still returned no repository result. Until a reachable fork is available, the only safe writable integration record remains this XtCrash report; no code or branch has been written to `SoufianoDev/XtMapper`.
+
+### Updated gate summary
+
+| Gate | Result |
+|---|---|
+| XtCrash branch tests, lint, consumer assembly at `8a0e54c` | **PASS** — CI run 40749398767 |
+| XtMapper standalone JVM tests and debug/native build at `b8f102a` | **PASS** — CI run 40717364818 |
+| XtCrash dependency coordinates resolved by an external consumer | **NOT VERIFIED** |
+| XtMapper merged manifest and R8/minified release with XtCrash | **NOT RUN** |
+| Android device crash UI and privacy flow | **NOT RUN** |
+| cage-xtmapper request/ack and browser handoff | **NOT IMPLEMENTED / NOT VERIFIED** |
