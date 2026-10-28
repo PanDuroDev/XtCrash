@@ -85,6 +85,21 @@ internal object IssueUrlPrivacyPreviewBuilder {
 
 /** Keeps required manual-paste guidance ahead of URL and field details. */
 internal object IssueUrlPrivacyConfirmationComposer {
+
+    /**
+     * Keeps the URL and field preview visible when an app overrides the legacy
+     * privacy-message resource without including its second format placeholder.
+     * Formatter ignores unused arguments, so passing a preview does not prove
+     * that the customized resource rendered it.
+     */
+    fun ensurePreviewVisible(formattedMessage: String, preview: String): String {
+        if (preview.isBlank() || formattedMessage.contains(preview)) {
+            return formattedMessage
+        }
+        val message = formattedMessage.trimEnd()
+        return if (message.isEmpty()) preview else "$message\n\n$preview"
+    }
+
     fun compose(manualPasteNote: String?, destinationMessage: String): String {
         val note = manualPasteNote?.takeIf { it.isNotBlank() } ?: return destinationMessage
         return "$note\n\n$destinationMessage"
