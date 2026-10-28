@@ -181,7 +181,18 @@ class ReportDispatcher(
     fun confirmWebUrl() {
         val requestId = currentRequestId ?: return
         val prepared = ownership.consumeConfirmation(requestId) ?: return
-        openUrl(requestId, prepared)
+        val handlerClass = config.reportActionHandlerClass
+        if (handlerClass != null && ReportHandlerConsentPolicy.requiresConsentBeforeHandler(
+                prepared.destination,
+                handlerConfigured = true,
+            )
+        ) {
+            // The user has reviewed the exact report-bearing URL. Only now may
+            // the integration receive it and decide whether to accept the handoff.
+            invokeHandler(requestId, handlerClass, prepared, webConfirmed = true)
+        } else {
+            openUrl(requestId, prepared)
+        }
     }
 
     private fun emit(requestId: String, state: ReportState) {
@@ -228,7 +239,18 @@ class ReportDispatcher(
         // 8. Invoke the optional report-action handler when configured.
         val handlerClass = config.reportActionHandlerClass
         if (handlerClass != null) {
-            invokeHandler(requestId, handlerClass, prepared)
+            if (ReportHandlerConsentPolicy.requiresConsentBeforeHandler(
+                    prepared.destination,
+                    handlerConfigured = true,
+                )
+            ) {
+                // Web destinations carry report content in the URL. Do not
+                // pass that URL to an external integration before the user
+                // has reviewed the privacy confirmation.
+                performWebAction(requestId, prepared)
+            } else {
+                invokeHandler(requestId, handlerClass, prepared)
+            }
             return
         }
 
@@ -326,7 +348,12 @@ class ReportDispatcher(
         prefillBody = built.body
     }
 
-    private fun invokeHandler(requestId: String, handlerClass: Class<out ReportActionHandler>, prepared: PreparedReport) {
+    private fun invokeHandler(
+        requestId: String,
+        handlerClass: Class<out ReportActionHandler>,
+        prepared: PreparedReport,
+        webConfirmed: Boolean = false,
+    ) {
         emit(requestId, ReportState(Phase.HANDLER_RUNNING, prepared = prepared))
         val timeoutMs = config.reportHandlerTimeoutMs.toLong()
 
@@ -339,7 +366,7 @@ class ReportDispatcher(
                     // crash or a replaced dispatcher.
                     return@post
                 }
-                handleOutcome(requestId, result, prepared)
+                handleOutcome(requestId, result, prepared, webConfirmed)
             }
         }.start()
     }
@@ -393,13 +420,18 @@ class ReportDispatcher(
      * of responsibility — never a submitted issue or sent email — and never
      * starts another flow. UNKNOWN never triggers an automatic retry.
      */
-    private fun handleOutcome(requestId: String, outcome: ReportOutcome, prepared: PreparedReport) {
+    private fun handleOutcome(
+        requestId: String,
+        outcome: ReportOutcome,
+        prepared: PreparedReport,
+        webConfirmed: Boolean,
+    ) {
         when (outcome) {
             ReportOutcome.ACCEPTED -> {
                 emit(requestId, ReportState(Phase.ACCEPTED, message = context.getString(R.string.xtcrash_report_accepted), prepared = prepared))
             }
             ReportOutcome.NOT_HANDLED -> {
-                performDestinationAction(requestId, prepared)
+                performDestinationAction(requestId, prepared, webConfirmed)
             }
             ReportOutcome.FAILED -> {
                 emit(requestId, ReportState(
@@ -421,11 +453,18 @@ class ReportDispatcher(
     }
 
     /** Normal action for the selected destination. Also the fallback executor. */
-    private fun performDestinationAction(requestId: String, prepared: PreparedReport) {
+    private fun performDestinationAction(
+        requestId: String,
+        prepared: PreparedReport,
+        webConfirmed: Boolean = false,
+    ) {
         when (prepared.destination) {
             null -> performSharesheetAction(requestId, prepared)
             ReportDestination.EMAIL -> performEmailAction(requestId, prepared)
-            ReportDestination.GITHUB, ReportDestination.GITLAB -> performWebAction(requestId, prepared)
+            ReportDestination.GITHUB, ReportDestination.GITLAB -> {
+                if (webConfirmed) openUrl(requestId, prepared)
+                else performWebAction(requestId, prepared)
+            }
             ReportDestination.CUSTOM -> performCustomAction(requestId, prepared)
         }
     }
