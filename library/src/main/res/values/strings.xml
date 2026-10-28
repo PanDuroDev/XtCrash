@@ -33,7 +33,7 @@
     <string name="xtcrash_report_url_privacy_no_prefill">The URL does not prefill a title or description; you will need to enter them on the issue page.</string>
     <string name="xtcrash_report_url_privacy_fields_present">Fields present in the URL:\n%1$s</string>
     <string name="xtcrash_report_url_privacy_title">Send report via %1$s?</string>
-    <string name="xtcrash_report_url_privacy_message">The report below will be included in the web address and may be sent to %1$s before you submit the issue. You can edit it before submitting.\n\n%2$s</string>
+    <string name="xtcrash_report_url_privacy_message">Opening the %1$s issue URL may send its prefilled values to that service before you submit the issue. Review the URL and fields below before continuing.\n\n%2$s</string>
     <string name="xtcrash_report_url_continue">Continue</string>
     <string name="xtcrash_report_url_cancel">Cancel</string>
     <string name="xtcrash_report_manual_paste">The report was copied to the clipboard. Paste it into the issue form before submitting.</string>
