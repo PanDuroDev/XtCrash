@@ -34,6 +34,9 @@
     <string name="xtcrash_report_url_privacy_fields_present">Fields present in the URL:\n%1$s</string>
     <string name="xtcrash_report_url_privacy_title">Send report via %1$s?</string>
     <string name="xtcrash_report_url_privacy_message">Opening the %1$s issue URL may send query values to that service before you submit the issue. Review the destination and fields below before continuing.\n\n%2$s</string>
+    <string name="xtcrash_report_url_prefill_disclosure">Opening this URL may send the prefilled title or description to %1$s before you submit the issue. The destination may process these values as soon as the page opens.</string>
+    <string name="xtcrash_report_url_destination_format">Destination URL: %1$s</string>
+    <string name="xtcrash_report_http_warning">Warning: this destination uses unencrypted HTTP. Data sent between this device and %1$s is not protected by TLS and may be read or modified by network observers. This includes issue URL values and report content pasted after the page opens. Continue only on a trusted network.</string>
     <string name="xtcrash_report_url_continue">Continue</string>
     <string name="xtcrash_report_url_cancel">Cancel</string>
     <string name="xtcrash_report_manual_paste">The report was copied to the clipboard. Paste it into the issue form before submitting.</string>

@@ -565,11 +565,12 @@ class ReportDispatcher(
     private fun privacyDialogMessage(prepared: PreparedReport): String {
         val url = prepared.url
             ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url)
-        val preview = IssueUrlPrivacyPreviewBuilder.build(
-            url,
-            prepared.destination ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url),
-        ) ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url)
-        val isGitHub = prepared.destination == ReportDestination.GITHUB
+        val destination = prepared.destination
+            ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url)
+        val preview = IssueUrlPrivacyPreviewBuilder.build(url, destination)
+            ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url)
+
+        val isGitHub = destination == ReportDestination.GITHUB
         val destinationLabel = context.getString(
             if (isGitHub) R.string.xtcrash_report_destination_github
             else R.string.xtcrash_report_destination_gitlab,
@@ -581,7 +582,7 @@ class ReportDispatcher(
         preview.description?.let {
             fields += context.getString(R.string.xtcrash_report_url_privacy_description_field, it)
         }
-        val details = if (fields.isEmpty()) {
+        val fieldDetails = if (fields.isEmpty()) {
             context.getString(R.string.xtcrash_report_url_privacy_no_prefill)
         } else {
             context.getString(
@@ -589,27 +590,45 @@ class ReportDispatcher(
                 fields.joinToString("\n"),
             )
         }
-        val destinationUrl = preview.destinationUrl
-        val manualPasteNote = if (prepared.prefillOmitsReport) {
-            context.getString(
-                if (prepared.reportCopiedToClipboard) R.string.xtcrash_report_manual_paste
-                else R.string.xtcrash_report_manual_paste_not_copied,
-            )
-        } else {
-            null
+
+        val uri = Uri.parse(url)
+        val host = buildString {
+            append(uri.host ?: context.getString(R.string.xtcrash_report_url_privacy_unknown_host))
+            if (uri.port != -1) append(":").append(uri.port)
         }
-        val previewText = "$destinationUrl\n\n$details"
-        // Keep the legacy resource so existing app translations still apply.
-        // A customized translation may omit %2$s; guarantee the preview remains
-        // visible instead of relying on Formatter to consume every argument.
+        val destinationDetails = context.getString(
+            R.string.xtcrash_report_url_destination_format,
+            preview.destinationUrl,
+        )
+        val detailsMessage = ReportPrivacyPolicy.composeConfirmationSections(
+            url = url,
+            title = preview.title,
+            description = preview.description,
+            httpWarning = context.getString(R.string.xtcrash_report_http_warning, host),
+            prefillDisclosure = context.getString(
+                R.string.xtcrash_report_url_prefill_disclosure,
+                destinationLabel,
+            ),
+            destination = destinationDetails,
+            fields = fieldDetails,
+        )
+        val manualPasteNote = ReportPrivacyPolicy.manualPasteNote(
+            prefillOmitsReport = prepared.prefillOmitsReport,
+            reportCopiedToClipboard = prepared.reportCopiedToClipboard,
+            manualPasteNote = context.getString(R.string.xtcrash_report_manual_paste),
+            manualPasteNotCopiedNote = context.getString(R.string.xtcrash_report_manual_paste_not_copied),
+        )
+
+        // Keep the legacy resource so apps that customize it retain localization.
+        // If a customized resource omits %2$s, still show the privacy details.
         val formattedMessage = context.getString(
             R.string.xtcrash_report_url_privacy_message,
             destinationLabel,
-            previewText,
+            detailsMessage,
         )
         val message = IssueUrlPrivacyConfirmationComposer.ensurePreviewVisible(
             formattedMessage,
-            previewText,
+            detailsMessage,
         )
         return IssueUrlPrivacyConfirmationComposer.compose(manualPasteNote, message)
     }

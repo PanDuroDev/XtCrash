@@ -172,7 +172,22 @@ internal object IssueUrlBuilder {
             // (e.g. https://host?x=1 + /p/-/issues/new), so bases carrying
             // one are rejected outright.
             (scheme == "https" || scheme == "http") && !host.isNullOrEmpty() && pathOk
-                    && uri.query == null && uri.fragment == null
+                    && uri.userInfo == null && uri.query == null && uri.fragment == null
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Returns true when a destination uses plaintext HTTP. Callers must warn
+     * before navigation even when the final issue URL is bare and carries no
+     * non-empty prefilled report fields.
+     */
+    fun usesUnencryptedHttp(url: String): Boolean {
+        return try {
+            val uri = URI(url)
+            uri.scheme.equals("http", ignoreCase = true) && !uri.host.isNullOrEmpty()
+                    && uri.userInfo == null && uri.fragment == null
         } catch (e: Exception) {
             false
         }
@@ -180,15 +195,15 @@ internal object IssueUrlBuilder {
 
     /**
      * Structural check on a finished URL before it becomes the report's
-     * openable target: a parseable http(s) URL with a host and no fragment,
-     * so a malformed build can only ever degrade to Copy-only fallback.
+     * openable target: a parseable http(s) URL with a host, no user-info, and
+     * no fragment, so malformed targets degrade to Copy-only fallback.
      */
     fun isValidIssueUrl(url: String): Boolean {
         return try {
             val uri = URI(url)
             val scheme = uri.scheme?.lowercase()
             (scheme == "https" || scheme == "http") && !uri.host.isNullOrEmpty()
-                    && uri.fragment == null
+                    && uri.userInfo == null && uri.fragment == null
         } catch (e: Exception) {
             false
         }
