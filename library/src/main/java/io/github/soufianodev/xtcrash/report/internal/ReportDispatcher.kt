@@ -594,34 +594,23 @@ class ReportDispatcher(
                 fields.joinToString("\n"),
             )
         }
-        val carriesPrefillContent = !title.isNullOrEmpty() || !body.isNullOrEmpty()
         val destinationDetails = context.getString(
             R.string.xtcrash_report_url_destination_format,
             url,
         )
-        val warning = if (IssueUrlBuilder.usesUnencryptedHttp(url)) {
-            context.getString(R.string.xtcrash_report_http_warning, host)
-        } else {
-            null
-        }
-        val prefillDisclosure = if (carriesPrefillContent) {
-            context.getString(R.string.xtcrash_report_url_prefill_disclosure, destinationName)
-        } else {
-            null
-        }
-        val manualPasteNote = if (prepared.prefillOmitsReport) {
-            if (prepared.reportCopiedToClipboard) {
-                context.getString(R.string.xtcrash_report_manual_paste)
-            } else {
-                context.getString(R.string.xtcrash_report_manual_paste_not_copied)
-            }
-        } else {
-            null
-        }
         val detailsMessage = ReportPrivacyPolicy.composeConfirmationSections(
-            manualPasteNote = manualPasteNote,
-            httpWarning = warning,
-            prefillDisclosure = prefillDisclosure,
+            url = url,
+            title = title,
+            description = body,
+            prefillOmitsReport = prepared.prefillOmitsReport,
+            reportCopiedToClipboard = prepared.reportCopiedToClipboard,
+            manualPasteNote = context.getString(R.string.xtcrash_report_manual_paste),
+            manualPasteNotCopiedNote = context.getString(R.string.xtcrash_report_manual_paste_not_copied),
+            httpWarning = context.getString(R.string.xtcrash_report_http_warning, host),
+            prefillDisclosure = context.getString(
+                R.string.xtcrash_report_url_prefill_disclosure,
+                destinationName,
+            ),
             destination = destinationDetails,
             fields = details,
         )
