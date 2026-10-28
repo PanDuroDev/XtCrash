@@ -39,7 +39,7 @@ The change does not authorize background uploads or silently submit an issue. Th
 
 ### XtMapper
 
-- The checked draft's `app/build.gradle` does not declare XtCrash.
+- The checked draft's `app/build.gradle` at `b8f102a7ab1e6202c423c0c021b18053ac02495b` does not declare XtCrash. Its `minSdk 25` remains compatible with XtCrash core's API 23+ baseline, but this is only a platform-floor comparison, not integration proof.
 - Its manifest does not yet show the merged XtCrash provider/error activity, because the dependency is not integrated.
 - The current `App.onCreate()` initializes XtLogger; XtCrash configuration must be installed early enough for the provider/error process lifecycle. Verify the chosen initialization point with the actual merged manifest and a forced-crash test.
 - The crash-reporting design document in that draft still describes report routing as unimplemented and was audited against an older XtCrash commit. Update it only after this branch's API and tests are verified.
@@ -67,8 +67,8 @@ The change does not authorize background uploads or silently submit an issue. Th
 
 | Area | Evidence required | Current status |
 |---|---|---|
-| XtCrash API and core build | Compile against public API and build core artifact | Source inspected; this branch's code change still needs CI/build verification |
-| Privacy confirmation | Handler cannot receive GitHub/GitLab URL before explicit confirmation | Policy and dispatcher updated; unit test added; execution pending |
+| XtCrash API and core build | Compile against public API and build core artifact | **PASS** on fork commit `7023a85d8d420448a9350e3d92692b6e0d3e0401`: `:library:compileDebugKotlin`, `:xtcrash-compose:compileDebugKotlin`, `:library:assembleDebug`, `:xtcrash-compose:assembleDebug`, and `:xtcrash-sample:assembleDebug` succeeded in [CI run 40735898417](https://github.com/PanDuroDev/XtCrash/actions/runs/40735898417) |
+| Privacy confirmation | Handler cannot receive GitHub/GitLab URL before explicit confirmation | Policy/state unit tests and build/lint **PASS** in CI run 40735898417; no Android UI/device-level consent test yet |
 | XtMapper integration | Dependency, merged manifest, R8, startup/crash regression | Not integrated |
 | XtLogger boundary | Existing logging/session behavior preserved; no duplicate pipeline | Source design only |
 | Host transport | Real request/ack with request IDs, timeouts and permissions | Not implemented |
@@ -76,5 +76,11 @@ The change does not authorize background uploads or silently submit an issue. Th
 | Diagnostics export | Bounded export and redaction/retention checks | Not implemented |
 | Full end-to-end | Tested XtCrash → XtMapper → cage-xtmapper on recorded commits | Not verified |
 | JitPack release | Tag, successful artifact build, external Gradle consumer | Not verified |
+
+## Latest verification evidence
+
+- Fork branch commit tested: `7023a85d8d420448a9350e3d92692b6e0d3e0401`.
+- GitHub Actions run [40735898417](https://github.com/PanDuroDev/XtCrash/actions/runs/40735898417) completed successfully on 2026-10-28. Both the unit-test/compile step and lint/assemble step passed. Gradle reported deprecation warnings for features incompatible with Gradle 10; these warnings did not fail the run.
+- This validates the current XtCrash branch's compilation, listed unit tests, lint task, and debug assembly only. It does **not** validate runtime UI behavior, Android device behavior, the XtMapper draft build, native/JNI, Waydroid, or host/browser transport.
 
 **Release decision:** keep Issue #26 open. The source API is promising and the SDK baseline is compatible, but full compatibility cannot honestly be called 100% until the moving XtMapper draft is stabilized and the real host transport/browser handoff passes the end-to-end checks.
