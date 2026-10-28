@@ -152,3 +152,36 @@ The search for `PanDuroDev/XtMapper` still returned no repository result. Until 
 | External consumer resolves and compiles AAR | **NOT RUN** |
 | XtMapper integration branch in owner fork | **BLOCKED — fork unavailable** |
 | Android runtime, privacy UI, Waydroid host/browser path | **NOT RUN / NOT IMPLEMENTED** |
+
+
+## Phase 4 — refreshed upstream checkpoint and lifecycle review (2026-10-29)
+
+### Current state refresh
+
+- XtMapper PR #5 is still **open, unmerged, and Draft**, with head `b8f102a7ab1e6202c423c0c021b18053ac02495b` on `merge/upstream-dev-updates`. The latest PR metadata still says the broad changes are not ready to merge until build and runtime checks are complete.
+- The PR description's verification paragraph is stale: it says no Gradle build or test suite has run, while CI run [40717364818](https://github.com/SoufianoDev/XtMapper/actions/runs/40717364818) succeeded for that exact head and ran `:app:testDebugUnitTest` and `:app:assembleDebug`, including native builds for four ABIs. This resolves the compile/JVM/debug-build gate only; it does not replace device, Waydroid, or release/minification tests.
+- A later automated-review summary reported that the incremental review selected `RemoteService.kt` but skipped substantive review of it as similar to prior changes. Its zero-comment result should not be interpreted as a full independent approval. The targeted source check says the already-queued start/pause race is fixed by reading `inputService` inside the shared Handler operation; delayed connection callbacks after a stop/pause remain a separate lifecycle case to test.
+
+### Additional source-backed lifecycle finding
+
+At the exact PR head, `TouchPointer.onStartCommand()` sets `isRunning = true`, stores the active instance, and updates the Quick Settings tile before `connectRemoteService()` has succeeded. In `connectRemoteService()`, the `service == null` callback updates the UI with a connection failure and returns without resetting that running state or updating the tile. This can leave the app/tile reporting an active keymapper after remote startup failed.
+
+Source links:
+- [TouchPointer.kt at the tested head](https://github.com/SoufianoDev/XtMapper/blob/b8f102a7ab1e6202c423c0c021b18053ac02495b/app/src/main/java/xtr/keymapper/TouchPointer.kt)
+- [PR #5](https://github.com/SoufianoDev/XtMapper/pull/5)
+
+This is a **static source finding**, not a runtime reproduction. The safe correction belongs in an authorized XtMapper working fork: model startup as pending until the remote connection/start succeeds, or roll back the running state and tile on every failure path; ensure delayed callbacks cannot resurrect a stopped service; add regression tests for null connection and stop-before-callback. No change was made to the upstream repository.
+
+### Phase 4 decision
+
+**Previous CI gates remain PASS; integration remains BLOCKED.** No artifact has been proven externally resolvable, no consumer Gradle build has been run, no integration-owner XtMapper fork is available, and Android/Waydroid end-to-end behavior remains unverified.
+
+| Gate | Updated status |
+|---|---|
+| XtCrash Phase 1 and Phase 2 CI | **PASS** — runs 40749398767 and 40755754602 |
+| XtCrash Phase 3 documentation commit CI | **NOT CONFIRMED** by the available commit-workflow query; do not infer success from the earlier runs |
+| XtMapper standalone test/debug/native build | **PASS** — run 40717364818 at exact head |
+| XtMapper PR review coverage | **PARTIAL** — automated incremental review skipped substantive review of one selected file |
+| Remote-start failure state and tile | **STATIC FINDING — fix/test needed** |
+| Published artifact / external consumer | **NOT VERIFIED / NOT RUN** |
+| Cross-project integration and device runtime | **BLOCKED / NOT RUN** |
