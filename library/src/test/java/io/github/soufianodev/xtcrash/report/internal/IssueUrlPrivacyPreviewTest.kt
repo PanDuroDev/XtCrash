@@ -149,7 +149,7 @@ class IssueUrlPrivacyPreviewTest {
         val preview = "https://gitlab.com/group/project/-/issues/new\n\nFields present in the URL:\nTitle: \"Crash summary\""
         // String.format, which backs Resources.getString(id, formatArgs),
         // ignores the unused second argument when the resource has no %2$s.
-        val customResource = String.format(Locale.ROOT, "Open the %1$s issue page.", destination)
+        val customResource = String.format(Locale.ROOT, "Open the %1$s issue page.", destination, preview)
 
         val message = IssueUrlPrivacyConfirmationComposer.ensurePreviewVisible(
             customResource,
