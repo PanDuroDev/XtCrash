@@ -122,3 +122,33 @@ The search for `PanDuroDev/XtMapper` still returned no repository result. Until 
 | XtMapper merged manifest and R8/minified release with XtCrash | **NOT RUN** |
 | Android device crash UI and privacy flow | **NOT RUN** |
 | cage-xtmapper request/ack and browser handoff | **NOT IMPLEMENTED / NOT VERIFIED** |
+
+
+## Phase 3 — publication and consumer-readiness gate (2026-10-28)
+
+### Re-check of prior phases
+
+- Phase 1 XtCrash build/test/lint/consumer assembly passed in [run 40749398767](https://github.com/PanDuroDev/XtCrash/actions/runs/40749398767).
+- Phase 2 documentation commit `cd15520e7c516f3e574483ef8b70e6b970150d32` passed all workflow steps in [run 40755754602](https://github.com/PanDuroDev/XtCrash/actions/runs/40755754602). The Android job completed with conclusion `success`; unit-test/compile and lint/consumer-assembly steps both passed.
+- XtMapper's standalone CI checkpoint remains green at [run 40717364818](https://github.com/SoufianoDev/XtMapper/actions/runs/40717364818), but it is still upstream PR #5, not an integration-owner fork.
+
+### Publication evidence
+
+- The XtCrash fork's GitHub Releases page currently returns an empty release list: [PanDuroDev/XtCrash/releases](https://github.com/PanDuroDev/XtCrash/releases).
+- The library build configuration declares `PUBLISH_GROUP_ID = com.github.SoufianoDev`, `PUBLISH_ARTIFACT_ID = xtcrash`, and `PUBLISH_VERSION = 1.0.0`. These are build-time publishing properties only; they do not prove that a corresponding tag or JitPack artifact exists.
+- JitPack's documented flow requires a buildable tag/commit and an actual successful artifact build before a consumer can rely on a coordinate. See [JitPack build guidance](https://docs.jitpack.io/building/) and [Android dependency instructions](https://docs.jitpack.io/android/). An externally resolved Gradle consumer has not yet been demonstrated for this project, so `com.github.SoufianoDev:xtcrash:1.0.0` must not be copied into XtMapper as a verified dependency.
+- No release or tag was created by this audit. No files were changed in upstream `SoufianoDev/XtMapper`.
+
+### Phase 3 decision
+
+**Publication gate: BLOCKED / NOT VERIFIED.** The safe next step is to establish the intended release source and owner, verify a real tag and JitPack build, and run an isolated consumer Gradle build that resolves the AAR and compiles against the public API. Only after that should a dependency be added to an integration branch in the integration owner's XtMapper fork. That fork is still unavailable at `PanDuroDev/XtMapper`, so cross-project code integration remains blocked.
+
+| Gate | Current result |
+|---|---|
+| Prior XtCrash CI phases | **PASS** — runs 40749398767 and 40755754602 |
+| XtMapper standalone compile/JVM/native CI | **PASS** — run 40717364818, upstream draft only |
+| GitHub release for this XtCrash fork | **NONE LISTED** |
+| Published tag + successful JitPack artifact | **NOT VERIFIED** |
+| External consumer resolves and compiles AAR | **NOT RUN** |
+| XtMapper integration branch in owner fork | **BLOCKED — fork unavailable** |
+| Android runtime, privacy UI, Waydroid host/browser path | **NOT RUN / NOT IMPLEMENTED** |
