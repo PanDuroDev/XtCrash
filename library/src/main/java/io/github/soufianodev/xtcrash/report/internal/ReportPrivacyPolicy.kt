@@ -8,28 +8,34 @@ package io.github.soufianodev.xtcrash.report.internal
 internal object ReportPrivacyPolicy {
 
     /**
-     * Builds the confirmation sections from the prepared URL and report state.
-     * HTTP warnings, prefill disclosure, and manual-paste guidance are selected
-     * here so tests exercise the same decisions used by ReportDispatcher.
+     * Selects the truthful clipboard instruction for a shortened report.
+     * This is shared by the production confirmation path and unit tests.
+     */
+    fun manualPasteNote(
+        prefillOmitsReport: Boolean,
+        reportCopiedToClipboard: Boolean,
+        manualPasteNote: String,
+        manualPasteNotCopiedNote: String,
+    ): String? = when {
+        !prefillOmitsReport -> null
+        reportCopiedToClipboard -> manualPasteNote
+        else -> manualPasteNotCopiedNote
+    }
+
+    /**
+     * Includes the transport warning only for plaintext HTTP and the prefill
+     * disclosure only when a non-empty title or description is actually in the
+     * prepared URL. The caller supplies localized strings from resources.
      */
     fun composeConfirmationSections(
         url: String,
         title: String?,
         description: String?,
-        prefillOmitsReport: Boolean,
-        reportCopiedToClipboard: Boolean,
-        manualPasteNote: String,
-        manualPasteNotCopiedNote: String,
         httpWarning: String,
         prefillDisclosure: String,
         destination: String,
         fields: String,
     ): String {
-        val manualPasteMessage = when {
-            !prefillOmitsReport -> null
-            reportCopiedToClipboard -> manualPasteNote
-            else -> manualPasteNotCopiedNote
-        }
         val transportWarning = httpWarning.takeIf {
             IssueUrlBuilder.usesUnencryptedHttp(url)
         }
@@ -38,7 +44,6 @@ internal object ReportPrivacyPolicy {
         }
 
         return listOfNotNull(
-            manualPasteMessage,
             transportWarning,
             disclosure,
             destination,

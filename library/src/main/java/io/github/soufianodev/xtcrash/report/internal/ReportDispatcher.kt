@@ -563,62 +563,74 @@ class ReportDispatcher(
      * only claims a clipboard copy when one actually succeeded.
      */
     private fun privacyDialogMessage(prepared: PreparedReport): String {
-        val url = prepared.url ?: return context.getString(R.string.xtcrash_report_config_invalid)
-        val uri = Uri.parse(url)
-        val host = buildString {
-            append(uri.host ?: context.getString(R.string.xtcrash_report_url_unknown_host))
-            if (uri.port != -1) append(":").append(uri.port)
-        }
-        val isGitHub = prepared.destination == ReportDestination.GITHUB
-        val destinationName = context.getString(
+        val url = prepared.url
+            ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url)
+        val destination = prepared.destination
+            ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url)
+        val preview = IssueUrlPrivacyPreviewBuilder.build(url, destination)
+            ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url)
+
+        val isGitHub = destination == ReportDestination.GITHUB
+        val destinationLabel = context.getString(
             if (isGitHub) R.string.xtcrash_report_destination_github
             else R.string.xtcrash_report_destination_gitlab,
         )
-        val titleKey = if (isGitHub) "title" else "issue[title]"
-        val bodyKey = if (isGitHub) "body" else "issue[description]"
-        val names = uri.queryParameterNames
-        val title = if (titleKey in names) uri.getQueryParameter(titleKey) else null
-        val body = if (bodyKey in names) uri.getQueryParameter(bodyKey) else null
         val fields = mutableListOf<String>()
-        if (titleKey in names) {
-            fields += context.getString(R.string.xtcrash_report_url_title_format, title.orEmpty())
+        preview.title?.let {
+            fields += context.getString(R.string.xtcrash_report_url_privacy_title_field, it)
         }
-        if (bodyKey in names) {
-            fields += context.getString(R.string.xtcrash_report_url_description_format, body.orEmpty())
+        preview.description?.let {
+            fields += context.getString(R.string.xtcrash_report_url_privacy_description_field, it)
         }
-        val details = if (fields.isEmpty()) {
-            context.getString(R.string.xtcrash_report_url_no_prefill)
+        val fieldDetails = if (fields.isEmpty()) {
+            context.getString(R.string.xtcrash_report_url_privacy_no_prefill)
         } else {
             context.getString(
-                R.string.xtcrash_report_url_fields_present,
+                R.string.xtcrash_report_url_privacy_fields_present,
                 fields.joinToString("\n"),
             )
         }
+
+        val uri = Uri.parse(url)
+        val host = buildString {
+            append(uri.host ?: context.getString(R.string.xtcrash_report_url_privacy_unknown_host))
+            if (uri.port != -1) append(":").append(uri.port)
+        }
         val destinationDetails = context.getString(
             R.string.xtcrash_report_url_destination_format,
-            url,
+            preview.destinationUrl,
         )
         val detailsMessage = ReportPrivacyPolicy.composeConfirmationSections(
             url = url,
-            title = title,
-            description = body,
+            title = preview.title,
+            description = preview.description,
+            httpWarning = context.getString(R.string.xtcrash_report_http_warning, host),
+            prefillDisclosure = context.getString(
+                R.string.xtcrash_report_url_prefill_disclosure,
+                destinationLabel,
+            ),
+            destination = destinationDetails,
+            fields = fieldDetails,
+        )
+        val manualPasteNote = ReportPrivacyPolicy.manualPasteNote(
             prefillOmitsReport = prepared.prefillOmitsReport,
             reportCopiedToClipboard = prepared.reportCopiedToClipboard,
             manualPasteNote = context.getString(R.string.xtcrash_report_manual_paste),
             manualPasteNotCopiedNote = context.getString(R.string.xtcrash_report_manual_paste_not_copied),
-            httpWarning = context.getString(R.string.xtcrash_report_http_warning, host),
-            prefillDisclosure = context.getString(
-                R.string.xtcrash_report_url_prefill_disclosure,
-                destinationName,
-            ),
-            destination = destinationDetails,
-            fields = details,
         )
-        return context.getString(
+
+        // Keep the legacy resource so apps that customize it retain localization.
+        // If a customized resource omits %2$s, still show the privacy details.
+        val formattedMessage = context.getString(
             R.string.xtcrash_report_url_privacy_message,
-            destinationName,
+            destinationLabel,
             detailsMessage,
         )
+        val message = IssueUrlPrivacyConfirmationComposer.ensurePreviewVisible(
+            formattedMessage,
+            detailsMessage,
+        )
+        return IssueUrlPrivacyConfirmationComposer.compose(manualPasteNote, message)
     }
 
     /**

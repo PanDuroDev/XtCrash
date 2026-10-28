@@ -13,19 +13,24 @@ class ReportPrivacyPolicyTest {
         description: String? = null,
         prefillOmitsReport: Boolean = false,
         reportCopiedToClipboard: Boolean = false,
-    ): String = ReportPrivacyPolicy.composeConfirmationSections(
-        url = url,
-        title = title,
-        description = description,
-        prefillOmitsReport = prefillOmitsReport,
-        reportCopiedToClipboard = reportCopiedToClipboard,
-        manualPasteNote = "REPORT_COPIED_TO_CLIPBOARD_PASTE_BEFORE_SUBMIT",
-        manualPasteNotCopiedNote = "REPORT_NOT_COPIED_PASTE_MANUALLY",
-        httpWarning = "HTTP_IS_UNENCRYPTED",
-        prefillDisclosure = "PREFILL_MAY_BE_SENT_BEFORE_SUBMIT",
-        destination = "DESTINATION_URL",
-        fields = "DECODED_TITLE_AND_DESCRIPTION",
-    )
+    ): String {
+        val manualPasteNote = ReportPrivacyPolicy.manualPasteNote(
+            prefillOmitsReport = prefillOmitsReport,
+            reportCopiedToClipboard = reportCopiedToClipboard,
+            manualPasteNote = "REPORT_COPIED_TO_CLIPBOARD_PASTE_BEFORE_SUBMIT",
+            manualPasteNotCopiedNote = "REPORT_NOT_COPIED_PASTE_MANUALLY",
+        )
+        val sections = ReportPrivacyPolicy.composeConfirmationSections(
+            url = url,
+            title = title,
+            description = description,
+            httpWarning = "HTTP_IS_UNENCRYPTED",
+            prefillDisclosure = "PREFILL_MAY_BE_SENT_BEFORE_SUBMIT",
+            destination = "DESTINATION_URL",
+            fields = "DECODED_TITLE_AND_DESCRIPTION",
+        )
+        return IssueUrlPrivacyConfirmationComposer.compose(manualPasteNote, sections)
+    }
 
     @Test
     fun bareHttpUrlIncludesWarningEvenWhenNoPrefillIsPresent() {
