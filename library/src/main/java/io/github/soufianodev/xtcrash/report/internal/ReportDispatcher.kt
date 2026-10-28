@@ -113,6 +113,13 @@ class ReportDispatcher(
     @Volatile
     private var currentRequestId: String? = null
 
+    /**
+     * Request whose first privacy confirmation must precede handler invocation.
+     * Cleared when that confirmation is consumed, so explicit fallback actions
+     * cannot accidentally invoke the handler a second time.
+     */
+    private var handlerConfirmationRequestId: String? = null
+
     fun setListener(listener: Listener?) {
         this.listener = listener
     }
@@ -139,6 +146,7 @@ class ReportDispatcher(
      * tap can start a new request.
      */
     fun cancelPending() {
+        handlerConfirmationRequestId = null
         ownership.releaseInFlight()
         ownership.clearConfirmation()
     }
@@ -151,6 +159,7 @@ class ReportDispatcher(
      * that an external handler's acceptance was cancelled or rolled back.
      */
     fun invalidate() {
+        handlerConfirmationRequestId = null
         currentRequestId = null
         currentPrepared = null
         ownership.invalidate()
@@ -181,16 +190,20 @@ class ReportDispatcher(
     fun confirmWebUrl() {
         val requestId = currentRequestId ?: return
         val prepared = ownership.consumeConfirmation(requestId) ?: return
-        val handlerClass = config.reportActionHandlerClass
-        if (handlerClass != null && ReportHandlerConsentPolicy.requiresConsentBeforeHandler(
-                prepared.destination,
-                handlerConfigured = true,
-            )
-        ) {
-            // The user has reviewed the exact report-bearing URL. Only now may
-            // the integration receive it and decide whether to accept the handoff.
-            invokeHandler(requestId, handlerClass, prepared, webConfirmed = true)
+        val shouldInvokeHandler = handlerConfirmationRequestId == requestId
+        handlerConfirmationRequestId = null
+        if (shouldInvokeHandler) {
+            val handlerClass = config.reportActionHandlerClass
+            if (handlerClass != null) {
+                // The user has reviewed the exact report-bearing URL. Only now
+                // may the integration receive it and decide whether to accept.
+                invokeHandler(requestId, handlerClass, prepared, webConfirmed = true)
+            } else {
+                openUrl(requestId, prepared)
+            }
         } else {
+            // Explicit fallback confirmation must open the URL, not retry the
+            // handler that already failed or returned an uncertain outcome.
             openUrl(requestId, prepared)
         }
     }
@@ -247,6 +260,7 @@ class ReportDispatcher(
                 // Web destinations carry report content in the URL. Do not
                 // pass that URL to an external integration before the user
                 // has reviewed the privacy confirmation.
+                handlerConfirmationRequestId = requestId
                 performWebAction(requestId, prepared)
             } else {
                 invokeHandler(requestId, handlerClass, prepared)
