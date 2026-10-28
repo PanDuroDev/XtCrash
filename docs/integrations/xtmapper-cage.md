@@ -8,7 +8,7 @@ Status: **not end-to-end verified**. This document is a source-backed integratio
 - XtMapper: draft PR #5, head `b8f102a7ab1e6202c423c0c021b18053ac02495b`, “WIP: Reconcile upstream dev with XtLogger integration”.
 - cage-xtmapper: `migrate-to-c-golang-no-submodule` at `42271bbb533ee00fb46c9ea9146821a34cf3a4c3`.
 
-The XtMapper PR changes a broad surface area, including app startup, manifest/build configuration, service/session lifecycle, logging, native C/C++, and tests. Its own description says no Gradle build, test suite, Android-device, Waydroid, or native/JNI check has been run. Treat this as an unverified draft baseline, not a stable integration target.
+The XtMapper PR changes a broad surface area, including app startup, manifest/build configuration, service/session lifecycle, logging, native C/C++, and tests. Its PR description has not been kept in sync with CI: **the exact head commit `b8f102a7ab1e6202c423c0c021b18053ac02495b` did pass GitHub Actions run [40717364818](https://github.com/SoufianoDev/XtMapper/actions/runs/40717364818)** on 2026-10-28. The workflow ran `:app:testDebugUnitTest` and `:app:assembleDebug`; the log confirms NDK builds for `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`, and a debug APK artifact was uploaded. This closes the first compile/JVM-test gate for that exact commit, but it does **not** establish Android-device or Waydroid runtime correctness, and the PR remains a Draft. Treat the commit as a *CI-tested checkpoint*, not as a fully validated integration target.
 
 ## Confirmed XtCrash contract
 
@@ -54,7 +54,7 @@ The change does not authorize background uploads or silently submit an issue. Th
 
 ## Required integration sequence
 
-1. **Freeze a tested XtMapper commit.** First build and test the large draft independently; record the exact commit and preserve the rollback ref. Do not target an unbuilt moving branch.
+1. **Freeze a tested XtMapper commit.** Compile and JVM-test the large draft independently; record the exact commit and preserve the rollback ref. The compile/JVM gate now passes for `b8f102a7ab1e6202c423c0c021b18053ac02495b` in [run 40717364818](https://github.com/SoufianoDev/XtMapper/actions/runs/40717364818), and the existing rollback ref is named in PR #5. Before integration, verify that this remains the intended head and preserve a tested checkpoint in the integration owner's own fork. Do not target an unbuilt moving branch.
 2. **Compile-time integration.** Add only the core XtCrash artifact to a dedicated integration branch of XtMapper; verify the actual artifact coordinates, merged manifest, R8 rules, and compilation against the public API. The planned `v1.0.0` coordinate is not usable until a tag, JitPack build, and external consumer are verified.
 3. **Android crash path.** Configure XtCrash before its initialization provider runs where required. Test a deliberate uncaught exception in the main process and confirm the error UI appears in `:xtcrash_error`. Verify that normal no-handler behavior and user-driven fallback remain unchanged.
 4. **Handler boundary.** Add a public no-argument handler class in XtMapper. Test all outcomes (`ACCEPTED`, `NOT_HANDLED`, `FAILED`, `UNKNOWN`), timeout, process recreation, and R8/minification. Confirm that a GitHub/GitLab handler is not invoked before the URL privacy confirmation.
@@ -69,6 +69,7 @@ The change does not authorize background uploads or silently submit an issue. Th
 |---|---|---|
 | XtCrash API and core build | Compile against public API and build core artifact | **PASS** on fork commit `7023a85d8d420448a9350e3d92692b6e0d3e0401`: `:library:compileDebugKotlin`, `:xtcrash-compose:compileDebugKotlin`, `:library:assembleDebug`, `:xtcrash-compose:assembleDebug`, and `:xtcrash-sample:assembleDebug` succeeded in [CI run 40735898417](https://github.com/PanDuroDev/XtCrash/actions/runs/40735898417) |
 | Privacy confirmation | Handler cannot receive GitHub/GitLab URL before explicit confirmation | Policy/state unit tests and build/lint **PASS** in CI run 40735898417; no Android UI/device-level consent test yet |
+| XtMapper standalone build/JVM tests | `:app:testDebugUnitTest` + `:app:assembleDebug`, including NDK builds for four ABIs | **PASS** on exact PR head `b8f102a7ab1e6202c423c0c021b18053ac02495b` in [CI run 40717364818](https://github.com/SoufianoDev/XtMapper/actions/runs/40717364818); debug APK artifact uploaded |
 | XtMapper integration | Dependency, merged manifest, R8, startup/crash regression | Not integrated |
 | XtLogger boundary | Existing logging/session behavior preserved; no duplicate pipeline | Source design only |
 | Host transport | Real request/ack with request IDs, timeouts and permissions | Not implemented |
@@ -79,6 +80,8 @@ The change does not authorize background uploads or silently submit an issue. Th
 
 ## Latest verification evidence
 
+- **XtMapper phase 1 compile/JVM gate:** [CI run 40717364818](https://github.com/SoufianoDev/XtMapper/actions/runs/40717364818) completed successfully on exact PR head `b8f102a7ab1e6202c423c0c021b18053ac02495b`. The job ran `:app:testDebugUnitTest` and `:app:assembleDebug`; logs show successful NDK build tasks for `arm64-v8a`, `armeabi-v7a`, `x86`, and `x86_64`. Artifact [xtmapper-debug-6d4e676f1ae1b7f9ee8773d4e593a4d35cffbe2f](https://github.com/SoufianoDev/XtMapper/actions/runs/40717364818/artifacts/12827954007) was uploaded (expires 2026-11-04). The run used JDK 21 and Gradle 9.5.1. It emitted existing deprecation warnings, but ended `BUILD SUCCESSFUL`.
+- This evidence is from `SoufianoDev/XtMapper` PR #5, not from a `PanDuroDev/XtMapper` fork. The latter repository path returned 404 when checked, so no branch or code was written there. Do not treat this as a checkpoint committed into the integration owner's own XtMapper fork.
 - Fork branch commit tested: `7023a85d8d420448a9350e3d92692b6e0d3e0401`.
 - GitHub Actions run [40735898417](https://github.com/PanDuroDev/XtCrash/actions/runs/40735898417) completed successfully on 2026-10-28. Both the unit-test/compile step and lint/assemble step passed. Gradle reported deprecation warnings for features incompatible with Gradle 10; these warnings did not fail the run.
 - The documentation-only follow-up commit `f713b86b275c3b6df12925d268db862681966b6d` was also checked by [CI run 40739156373](https://github.com/PanDuroDev/XtCrash/actions/runs/40739156373), which completed successfully. The unit-test/compile, lint, and assembly steps all passed on that commit.
