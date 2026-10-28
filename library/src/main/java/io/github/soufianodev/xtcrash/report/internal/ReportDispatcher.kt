@@ -134,6 +134,7 @@ class ReportDispatcher(
         if (!ownership.tryBegin()) {
             return
         }
+        handlerConfirmationRequestId = null
         val requestId = UUID.randomUUID().toString()
         ownership.beginRequest(requestId)
         currentRequestId = requestId
@@ -550,6 +551,9 @@ class ReportDispatcher(
     private fun performWebAction(requestId: String, prepared: PreparedReport) {
         val url = prepared.url
         if (url == null) {
+            if (handlerConfirmationRequestId == requestId) {
+                handlerConfirmationRequestId = null
+            }
             emit(requestId, ReportState(
                 Phase.CONFIG_INVALID,
                 message = context.getString(R.string.xtcrash_report_config_invalid),
