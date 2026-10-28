@@ -24,12 +24,16 @@
     <string name="xtcrash_report_email_copied">The full report was copied to the clipboard — paste it into an email and send it manually.</string>
     <string name="xtcrash_report_url_privacy_title">Send report via %1$s?</string>
     <string name="xtcrash_report_url_privacy_message">Review the %1$s issue destination and the information below before continuing.\n\n%2$s</string>
+    <string name="xtcrash_report_destination_github">GitHub</string>
+    <string name="xtcrash_report_destination_gitlab">GitLab</string>
+    <string name="xtcrash_report_url_unknown_host">unknown host</string>
+    <string name="xtcrash_report_url_prefill_disclosure">Opening this URL may send the prefilled title or description to %1$s before you submit the issue. The destination may process these values as soon as the page opens.</string>
     <string name="xtcrash_report_url_destination_format">Destination URL: %1$s</string>
     <string name="xtcrash_report_url_title_format">Title: “%1$s”</string>
     <string name="xtcrash_report_url_description_format">Description: “%1$s”</string>
     <string name="xtcrash_report_url_fields_present">Fields present in the URL:\n%1$s</string>
     <string name="xtcrash_report_url_no_prefill">The URL does not prefill a title or description; you will need to enter them on the issue page.</string>
-    <string name="xtcrash_report_http_warning">Warning: this page uses unencrypted HTTP. Information in the issue URL may be exposed to networks or intermediaries between you and %1$s. This includes prefilled fields, and manually pasted report content may also be exposed after you open the page. Continue only if you trust the connection.</string>
+    <string name="xtcrash_report_http_warning">Warning: this destination uses unencrypted HTTP. Data sent between this device and %1$s is not protected by TLS and may be read or modified by network observers. This includes issue URL values and report content pasted after the page opens. Continue only on a trusted network.</string>
     <string name="xtcrash_report_url_continue">Continue</string>
     <string name="xtcrash_report_url_cancel">Cancel</string>
     <string name="xtcrash_report_manual_paste">The report was copied to the clipboard. Paste it into the issue form before submitting.</string>
