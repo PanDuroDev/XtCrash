@@ -30,7 +30,8 @@ Before this branch, `ReportDispatcher` invoked a configured report-action handle
 2. Show the existing privacy confirmation.
 3. Invoke the configured handler only after the user confirms.
 4. If the handler returns `NOT_HANDLED`, open the already-confirmed URL without asking the same confirmation twice.
-5. If the handler returns `ACCEPTED`, stop automatic fallback. `FAILED` and `UNKNOWN` remain explicit outcomes; `UNKNOWN` must never cause an automatic duplicate attempt.
+5. If the handler returns `FAILED` or `UNKNOWN`, an explicit later “Open issue page” fallback gets its own confirmation and opens the URL directly; it must not invoke the handler a second time. `UNKNOWN` never triggers an automatic duplicate attempt.
+6. If the handler returns `ACCEPTED`, stop automatic fallback.
 
 The change does not authorize background uploads or silently submit an issue. The user still confirms the report-bearing web URL before the handler can receive it.
 
