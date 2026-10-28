@@ -563,28 +563,51 @@ class ReportDispatcher(
      * only claims a clipboard copy when one actually succeeded.
      */
     private fun privacyDialogMessage(prepared: PreparedReport): String {
-        val url = prepared.url ?: return "No valid issue URL is available."
+        val url = prepared.url
+            ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url)
         val uri = Uri.parse(url)
-        val destinationLabel = if (prepared.destination == ReportDestination.GITHUB) "GitHub" else "GitLab"
+        val isGitHub = prepared.destination == ReportDestination.GITHUB
+        val destinationLabel = context.getString(
+            if (isGitHub) R.string.xtcrash_report_destination_github
+            else R.string.xtcrash_report_destination_gitlab,
+        )
         val host = buildString {
-            append(uri.host ?: "unknown host")
+            append(uri.host ?: context.getString(R.string.xtcrash_report_url_privacy_unknown_host))
             if (uri.port != -1) append(":").append(uri.port)
         }
-        val scheme = uri.scheme ?: "unknown"
+        val scheme = uri.scheme ?: context.getString(R.string.xtcrash_report_url_privacy_unknown_scheme)
         val names = uri.queryParameterNames
-        val titleKey = if (prepared.destination == ReportDestination.GITHUB) "title" else "issue[title]"
-        val bodyKey = if (prepared.destination == ReportDestination.GITHUB) "body" else "issue[description]"
+        val titleKey = if (isGitHub) "title" else "issue[title]"
+        val bodyKey = if (isGitHub) "body" else "issue[description]"
         val fields = mutableListOf<String>()
-        if (titleKey in names) fields += "Title: \"" + (uri.getQueryParameter(titleKey) ?: "") + "\""
-        if (bodyKey in names) fields += "Description: \"" + (uri.getQueryParameter(bodyKey) ?: "") + "\""
+        if (titleKey in names) {
+            fields += context.getString(
+                R.string.xtcrash_report_url_privacy_title_field,
+                uri.getQueryParameter(titleKey) ?: "",
+            )
+        }
+        if (bodyKey in names) {
+            fields += context.getString(
+                R.string.xtcrash_report_url_privacy_description_field,
+                uri.getQueryParameter(bodyKey) ?: "",
+            )
+        }
         val details = if (fields.isEmpty()) {
-            "The URL does not prefill a title or description; you will need to enter them on the issue page."
+            context.getString(R.string.xtcrash_report_url_privacy_no_prefill)
         } else {
-            "Fields present in the URL:\n" + fields.joinToString("\n")
+            context.getString(
+                R.string.xtcrash_report_url_privacy_fields_present,
+                fields.joinToString("\n"),
+            )
         }
         val path = uri.encodedPath?.takeIf { it.isNotEmpty() } ?: "/"
         val destinationUrl = "$scheme://$host$path"
-        var message = "Open the $destinationLabel issue page at $destinationUrl? The destination may receive any values in this URL before you submit the issue.\n\n$details"
+        var message = context.getString(
+            R.string.xtcrash_report_url_privacy_destination,
+            destinationLabel,
+            destinationUrl,
+            details,
+        )
         if (prepared.prefillOmitsReport) {
             val note = if (prepared.reportCopiedToClipboard) {
                 context.getString(R.string.xtcrash_report_manual_paste)
