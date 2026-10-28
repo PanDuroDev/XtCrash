@@ -82,3 +82,11 @@ internal object IssueUrlPrivacyPreviewBuilder {
         ReportDestination.GITLAB,
     )
 }
+
+/** Keeps required manual-paste guidance ahead of URL and field details. */
+internal object IssueUrlPrivacyConfirmationComposer {
+    fun compose(manualPasteNote: String?, destinationMessage: String): String {
+        val note = manualPasteNote?.takeIf { it.isNotBlank() } ?: return destinationMessage
+        return "$note\\n\\n$destinationMessage"
+    }
+}
