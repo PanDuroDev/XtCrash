@@ -563,15 +563,55 @@ class ReportDispatcher(
      * only claims a clipboard copy when one actually succeeded.
      */
     private fun privacyDialogMessage(prepared: PreparedReport): String {
-        val label = if (prepared.destination == ReportDestination.GITHUB) "GitHub" else "GitLab"
-        val message = context.getString(R.string.xtcrash_report_url_privacy_message, label, prefillBody)
-        if (!prepared.prefillOmitsReport) return message
-        val note = if (prepared.reportCopiedToClipboard) {
-            context.getString(R.string.xtcrash_report_manual_paste)
-        } else {
-            context.getString(R.string.xtcrash_report_manual_paste_not_copied)
+        val url = prepared.url
+            ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url)
+        val preview = IssueUrlPrivacyPreviewBuilder.build(
+            url,
+            prepared.destination ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url),
+        ) ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url)
+        val isGitHub = prepared.destination == ReportDestination.GITHUB
+        val destinationLabel = context.getString(
+            if (isGitHub) R.string.xtcrash_report_destination_github
+            else R.string.xtcrash_report_destination_gitlab,
+        )
+        val fields = mutableListOf<String>()
+        preview.title?.let {
+            fields += context.getString(R.string.xtcrash_report_url_privacy_title_field, it)
         }
-        return message + "\n\n" + note
+        preview.description?.let {
+            fields += context.getString(R.string.xtcrash_report_url_privacy_description_field, it)
+        }
+        val details = if (fields.isEmpty()) {
+            context.getString(R.string.xtcrash_report_url_privacy_no_prefill)
+        } else {
+            context.getString(
+                R.string.xtcrash_report_url_privacy_fields_present,
+                fields.joinToString("\n"),
+            )
+        }
+        val destinationUrl = preview.destinationUrl
+        val manualPasteNote = if (prepared.prefillOmitsReport) {
+            context.getString(
+                if (prepared.reportCopiedToClipboard) R.string.xtcrash_report_manual_paste
+                else R.string.xtcrash_report_manual_paste_not_copied,
+            )
+        } else {
+            null
+        }
+        val previewText = "$destinationUrl\n\n$details"
+        // Keep the legacy resource so existing app translations still apply.
+        // A customized translation may omit %2$s; guarantee the preview remains
+        // visible instead of relying on Formatter to consume every argument.
+        val formattedMessage = context.getString(
+            R.string.xtcrash_report_url_privacy_message,
+            destinationLabel,
+            previewText,
+        )
+        val message = IssueUrlPrivacyConfirmationComposer.ensurePreviewVisible(
+            formattedMessage,
+            previewText,
+        )
+        return IssueUrlPrivacyConfirmationComposer.compose(manualPasteNote, message)
     }
 
     /**
