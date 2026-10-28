@@ -565,12 +565,15 @@ class ReportDispatcher(
     private fun privacyDialogMessage(prepared: PreparedReport): String {
         val url = prepared.url ?: return context.getString(R.string.xtcrash_report_config_invalid)
         val uri = Uri.parse(url)
-        val scheme = uri.scheme?.lowercase() ?: "unknown"
         val host = buildString {
-            append(uri.host ?: "unknown host")
+            append(uri.host ?: context.getString(R.string.xtcrash_report_url_unknown_host))
             if (uri.port != -1) append(":").append(uri.port)
         }
         val isGitHub = prepared.destination == ReportDestination.GITHUB
+        val destinationName = context.getString(
+            if (isGitHub) R.string.xtcrash_report_destination_github
+            else R.string.xtcrash_report_destination_gitlab,
+        )
         val titleKey = if (isGitHub) "title" else "issue[title]"
         val bodyKey = if (isGitHub) "body" else "issue[description]"
         val names = uri.queryParameterNames
@@ -591,30 +594,42 @@ class ReportDispatcher(
                 fields.joinToString("\n"),
             )
         }
+        val carriesPrefillContent = !title.isNullOrEmpty() || !body.isNullOrEmpty()
         val destinationDetails = context.getString(
             R.string.xtcrash_report_url_destination_format,
             url,
         )
-        val carriesPrefillContent = !title.isNullOrEmpty() || !body.isNullOrEmpty()
-        val needsHttpWarning = scheme == "http" &&
-                (carriesPrefillContent || prepared.prefillOmitsReport)
-        val warning = if (needsHttpWarning) {
+        val warning = if (IssueUrlBuilder.usesUnencryptedHttp(url)) {
             context.getString(R.string.xtcrash_report_http_warning, host)
         } else {
             null
         }
-        val message = context.getString(
-            R.string.xtcrash_report_url_privacy_message,
-            if (isGitHub) "GitHub" else "GitLab",
-            listOfNotNull(destinationDetails, warning, details).joinToString("\n\n"),
-        )
-        if (!prepared.prefillOmitsReport) return message
-        val note = if (prepared.reportCopiedToClipboard) {
-            context.getString(R.string.xtcrash_report_manual_paste)
+        val prefillDisclosure = if (carriesPrefillContent) {
+            context.getString(R.string.xtcrash_report_url_prefill_disclosure, destinationName)
         } else {
-            context.getString(R.string.xtcrash_report_manual_paste_not_copied)
+            null
         }
-        return message + "\n\n" + note
+        val manualPasteNote = if (prepared.prefillOmitsReport) {
+            if (prepared.reportCopiedToClipboard) {
+                context.getString(R.string.xtcrash_report_manual_paste)
+            } else {
+                context.getString(R.string.xtcrash_report_manual_paste_not_copied)
+            }
+        } else {
+            null
+        }
+        val detailsMessage = ReportPrivacyPolicy.composeConfirmationSections(
+            manualPasteNote = manualPasteNote,
+            httpWarning = warning,
+            prefillDisclosure = prefillDisclosure,
+            destination = destinationDetails,
+            fields = details,
+        )
+        return context.getString(
+            R.string.xtcrash_report_url_privacy_message,
+            destinationName,
+            detailsMessage,
+        )
     }
 
     /**
