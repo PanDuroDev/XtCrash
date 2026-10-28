@@ -20,7 +20,5 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
       - name: Run unit tests and compile Android modules
         run: ./gradlew --no-daemon --stacktrace :library:testDebugUnitTest :library:assembleDebug :xtcrash-compose:assembleDebug
