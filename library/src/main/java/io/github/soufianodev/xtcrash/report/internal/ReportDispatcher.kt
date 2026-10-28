@@ -754,7 +754,7 @@ class ReportDispatcher(
                 if (!ownership.owns(requestId)) {
                     return@post
                 }
-                handleOutcome(requestId, outcome, prepared)
+                handleOutcome(requestId, outcome, prepared, webConfirmed = false)
             }
         }.start()
     }
