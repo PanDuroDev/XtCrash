@@ -1,0 +1,51 @@
+name: Verify Android library
+
+on:
+  push:
+    branches:
+      - integration/xtmapper-compatibility-audit
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-37" "build-tools;37.0.0" "platform-tools"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run unit tests and compile modules
+        run: |
+          ./gradlew --no-daemon \
+            :library:testDebugUnitTest \
+            :library:compileDebugKotlin \
+            :xtcrash-compose:compileDebugKotlin
+
+      - name: Run lint and assemble consumer artifacts
+        run: |
+          ./gradlew --no-daemon \
+            :library:lintDebug \
+            :library:assembleDebug \
+            :xtcrash-compose:assembleDebug \
+            :xtcrash-sample:assembleDebug
