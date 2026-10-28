@@ -563,15 +563,35 @@ class ReportDispatcher(
      * only claims a clipboard copy when one actually succeeded.
      */
     private fun privacyDialogMessage(prepared: PreparedReport): String {
-        val label = if (prepared.destination == ReportDestination.GITHUB) "GitHub" else "GitLab"
-        val message = context.getString(R.string.xtcrash_report_url_privacy_message, label, prefillBody)
-        if (!prepared.prefillOmitsReport) return message
-        val note = if (prepared.reportCopiedToClipboard) {
-            context.getString(R.string.xtcrash_report_manual_paste)
-        } else {
-            context.getString(R.string.xtcrash_report_manual_paste_not_copied)
+        val url = prepared.url ?: return "No valid issue URL is available."
+        val uri = Uri.parse(url)
+        val destinationLabel = if (prepared.destination == ReportDestination.GITHUB) "GitHub" else "GitLab"
+        val host = buildString {
+            append(uri.host ?: "unknown host")
+            if (uri.port != -1) append(":").append(uri.port)
         }
-        return message + "\n\n" + note
+        val scheme = uri.scheme ?: "unknown"
+        val names = uri.queryParameterNames
+        val titleKey = if (prepared.destination == ReportDestination.GITHUB) "title" else "issue[title]"
+        val bodyKey = if (prepared.destination == ReportDestination.GITHUB) "body" else "issue[description]"
+        val fields = mutableListOf<String>()
+        if (titleKey in names) fields += "Title: \"" + (uri.getQueryParameter(titleKey) ?: "") + "\""
+        if (bodyKey in names) fields += "Description: \"" + (uri.getQueryParameter(bodyKey) ?: "") + "\""
+        val details = if (fields.isEmpty()) {
+            "The URL does not prefill a title or description; you will need to enter them on the issue page."
+        } else {
+            "Fields present in the URL:\n" + fields.joinToString("\n")
+        }
+        var message = "Open $scheme://$host on $destinationLabel? The destination may receive any values in this URL before you submit the issue.\n\n$details"
+        if (prepared.prefillOmitsReport) {
+            val note = if (prepared.reportCopiedToClipboard) {
+                context.getString(R.string.xtcrash_report_manual_paste)
+            } else {
+                context.getString(R.string.xtcrash_report_manual_paste_not_copied)
+            }
+            message += "\n\n" + note
+        }
+        return message
     }
 
     /**
