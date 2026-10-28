@@ -41,9 +41,8 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v5
-
-      - name: Verify Gradle wrapper
-        uses: gradle/actions/wrapper-validation@v5
+        with:
+          gradle-version: '9.4.1'
 
       - name: Build and run unit tests
-        run: ./gradlew --no-daemon --stacktrace :library:testDebugUnitTest :library:assembleDebug :xtcrash-compose:assembleDebug
+        run: gradle --no-daemon --stacktrace :library:testDebugUnitTest :library:assembleDebug :xtcrash-compose:assembleDebug
