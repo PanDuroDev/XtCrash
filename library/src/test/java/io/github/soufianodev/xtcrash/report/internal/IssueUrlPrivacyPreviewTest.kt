@@ -1,6 +1,7 @@
 package io.github.soufianodev.xtcrash.report.internal
 
 import io.github.soufianodev.xtcrash.report.ReportDestination
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -141,4 +142,42 @@ class IssueUrlPrivacyPreviewTest {
             IssueUrlPrivacyConfirmationComposer.compose("   ", destination),
         )
     }
+
+    @Test
+    fun customPrivacyResourceWithoutPreviewPlaceholderStillShowsPreview() {
+        val destination = "GitLab"
+        val preview = "https://gitlab.com/group/project/-/issues/new\n\nFields present in the URL:\nTitle: \"Crash summary\""
+        // String.format, which backs Resources.getString(id, formatArgs),
+        // ignores the unused second argument when the resource has no %2$s.
+        val customResource = String.format(Locale.ROOT, "Open the %1$s issue page.", destination)
+
+        val message = IssueUrlPrivacyConfirmationComposer.ensurePreviewVisible(
+            customResource,
+            preview,
+        )
+
+        assertEquals("$customResource\n\n$preview", message)
+        assertTrue(message.contains(preview))
+    }
+
+    @Test
+    fun customPrivacyResourceWithPreviewPlaceholderDoesNotDuplicatePreview() {
+        val destination = "GitLab"
+        val preview = "https://gitlab.com/group/project/-/issues/new\n\nFields present in the URL:\nTitle: \"Crash summary\""
+        val customResource = String.format(
+            Locale.ROOT,
+            "Open the %1$s issue page.\n\n%2$s",
+            destination,
+            preview,
+        )
+
+        val message = IssueUrlPrivacyConfirmationComposer.ensurePreviewVisible(
+            customResource,
+            preview,
+        )
+
+        assertEquals(customResource, message)
+        assertEquals(1, message.split(preview).size - 1)
+    }
+
 }
