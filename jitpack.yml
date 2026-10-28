@@ -2,4 +2,5 @@ jdk:
   - openjdk21
 
 install:
-  - ./gradlew clean :library:publishToMavenLocal -x test
+  # JitPack must install every published module, not only the core artifact.
+  - ./gradlew clean :library:publishToMavenLocal :xtcrash-compose:publishToMavenLocal -x test
