@@ -35,6 +35,8 @@ The library does not infer a GitHub repository or GitLab project from your packa
 
 Before opening GitHub or GitLab URLs that contain report text, XtCrash presents a confirmation step showing the destination and content that will be placed in the URL. Report content in a URL may be transmitted to the destination before the user submits the issue, so this confirmation is intentional.
 
+HTTPS is the recommended configuration. GitLab HTTP destinations remain supported for compatibility with local development and trusted intranet deployments, but HTTP is unencrypted: network observers may read or modify URL values and any report content pasted after the issue page opens. XtCrash displays a prominent warning before navigating to any HTTP issue URL, including a bare page URL with no non-empty prefilled fields. The user must still confirm the navigation; reports are not uploaded automatically. Use HTTP only on a network you trust. Do not put usernames, passwords, or tokens in the configured GitLab base URL; destinations containing URL user-info are rejected.
+
 Email opens a draft for the user to review. The library does not send it automatically.
 
 ## URL length and clipboard fallback
