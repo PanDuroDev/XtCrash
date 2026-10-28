@@ -185,3 +185,32 @@ This is a **static source finding**, not a runtime reproduction. The safe correc
 | Remote-start failure state and tile | **STATIC FINDING — fix/test needed** |
 | Published artifact / external consumer | **NOT VERIFIED / NOT RUN** |
 | Cross-project integration and device runtime | **BLOCKED / NOT RUN** |
+
+
+## Phase 5 — CI closure and next actionable gate (2026-10-29)
+
+### CI result for the Phase 4 audit commit
+
+The documentation commit `f6f7bc0c1d1e93518929590cf6663566193e2e5b` passed [XtCrash workflow run 40780123864](https://github.com/PanDuroDev/XtCrash/actions/runs/40780123864). The `android` job completed with conclusion `success`; setup, Android SDK package installation, pinned Gradle setup, unit tests/module compilation, lint, and consumer-artifact assembly all completed successfully.
+
+This confirms the audit report and the existing XtCrash branch build/test/lint/assembly gate at this commit. It does not retroactively prove the unconfirmed Phase 3 commit's CI, publish a release, or establish cross-project runtime compatibility.
+
+### Rechecked blockers
+
+- No repository named `PanDuroDev/XtMapper` was returned by the repository search. No fork was created and no code was written to `SoufianoDev/XtMapper`.
+- Upstream XtMapper PR #5 remains open, unmerged, and Draft at the same tested head `b8f102a7ab1e6202c423c0c021b18053ac02495b`. Its description still contains stale wording that no Gradle build/test has run, despite the successful exact-head run 40717364818.
+- The static `TouchPointer.kt` failed-start state/tile issue remains a source finding without runtime reproduction or a fix in an authorized fork.
+- XtCrash publication and external consumer resolution remain unverified; no verified dependency coordinate is available to add safely.
+
+### Phase 5 decision
+
+**XtCrash audit branch CI: PASS. Cross-project integration: BLOCKED.** The next meaningful implementation gate is to obtain or create an authorized `PanDuroDev/XtMapper` fork, preserve the exact tested upstream checkpoint, fix and regression-test the startup failure/delayed-callback lifecycle in that fork, and independently verify XtCrash publication through an external Gradle consumer. Do not merge the upstream draft or add guessed artifact coordinates as a substitute for those checks.
+
+| Gate | Status after Phase 5 |
+|---|---|
+| XtCrash audit branch build/tests/lint/consumer assembly at `f6f7bc0` | **PASS** — [run 40780123864](https://github.com/PanDuroDev/XtCrash/actions/runs/40780123864) |
+| XtMapper standalone build/JVM/native gate at `b8f102a` | **PASS** — [run 40717364818](https://github.com/SoufianoDev/XtMapper/actions/runs/40717364818) |
+| Integration-owner XtMapper fork | **NOT FOUND** |
+| Remote-start failure rollback and delayed-callback regression tests | **NOT FIXED / NOT RUN in an authorized fork** |
+| Published XtCrash artifact and external consumer | **NOT VERIFIED** |
+| Android device / Waydroid end-to-end | **NOT RUN** |
