@@ -116,4 +116,29 @@ class IssueUrlPrivacyPreviewTest {
             ),
         )
     }
+    @Test
+    fun manualPasteInstructionPrecedesDestinationAndFieldDetails() {
+        val note = "Paste the full report before submitting."
+        val destination = "Open the GitLab issue page at https://gitlab.com/group/project/-/issues/new\nFields present in the URL:\nTitle: \"Crash summary\""
+
+        val message = IssueUrlPrivacyConfirmationComposer.compose(note, destination)
+
+        assertEquals("$note\n\n$destination", message)
+        assertTrue(message.indexOf(note) < message.indexOf("https://gitlab.com"))
+        assertTrue(message.indexOf(note) < message.indexOf("Fields present in the URL"))
+    }
+
+    @Test
+    fun confirmationWithoutManualPasteNoteIsUnchanged() {
+        val destination = "Open the GitHub issue page at https://github.com/org/app/issues/new"
+
+        assertEquals(
+            destination,
+            IssueUrlPrivacyConfirmationComposer.compose(null, destination),
+        )
+        assertEquals(
+            destination,
+            IssueUrlPrivacyConfirmationComposer.compose("   ", destination),
+        )
+    }
 }
