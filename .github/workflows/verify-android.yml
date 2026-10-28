@@ -12,7 +12,8 @@ permissions:
   contents: read
 
 jobs:
-  android:
+  unit-tests:
+    name: Isolated unit tests
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -30,9 +31,7 @@ jobs:
       - name: Install Android SDK packages
         run: |
           yes | sdkmanager --licenses
-          # API 37 is published as android-37.0 in the SDK repository.
           sdkmanager "platforms;android-37.0" "build-tools;36.0.0" "platform-tools"
-          # AGP looks up compileSdk 37 as android-37; provide the compatibility alias.
           if [ -d "$ANDROID_HOME/platforms/android-37.0" ] && [ ! -e "$ANDROID_HOME/platforms/android-37" ]; then
             ln -s android-37.0 "$ANDROID_HOME/platforms/android-37"
           fi
@@ -43,20 +42,82 @@ jobs:
           gradle-version: '9.4.1'
           validate-wrappers: false
 
-      # The repository wrapper JAR currently has a hash not yet recognized by
-      # Gradle's wrapper validator. CI uses the pinned official distribution
-      # directly rather than disabling wrapper validation or executing that JAR.
-      - name: Run unit tests and compile modules
+      # Force a clean execution of the test task; no test reports or test files are uploaded.
+      - name: Run unit tests without build cache
         run: |
-          gradle --no-daemon \
-            :library:testDebugUnitTest \
-            :library:compileDebugKotlin \
-            :xtcrash-compose:compileDebugKotlin
+          gradle --no-daemon --no-build-cache --rerun-tasks --stacktrace \
+            :library:testDebugUnitTest
 
-      - name: Run lint and assemble consumer artifacts
+  lint:
+    name: Isolated lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android SDK packages
         run: |
-          gradle --no-daemon \
-            :library:lintDebug \
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-37.0" "build-tools;36.0.0" "platform-tools"
+          if [ -d "$ANDROID_HOME/platforms/android-37.0" ] && [ ! -e "$ANDROID_HOME/platforms/android-37" ]; then
+            ln -s android-37.0 "$ANDROID_HOME/platforms/android-37"
+          fi
+
+      - name: Set up pinned Gradle distribution
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '9.4.1'
+          validate-wrappers: false
+
+      - name: Run lint without build cache
+        run: |
+          gradle --no-daemon --no-build-cache --rerun-tasks --stacktrace \
+            :library:lintDebug
+
+  consumer-assembly:
+    name: Isolated consumer assembly
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-37.0" "build-tools;36.0.0" "platform-tools"
+          if [ -d "$ANDROID_HOME/platforms/android-37.0" ] && [ ! -e "$ANDROID_HOME/platforms/android-37" ]; then
+            ln -s android-37.0 "$ANDROID_HOME/platforms/android-37"
+          fi
+
+      - name: Set up pinned Gradle distribution
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '9.4.1'
+          validate-wrappers: false
+
+      - name: Assemble consumer modules without build cache
+        run: |
+          gradle --no-daemon --no-build-cache --rerun-tasks --stacktrace \
+            :library:compileDebugKotlin \
+            :xtcrash-compose:compileDebugKotlin \
             :library:assembleDebug \
             :xtcrash-compose:assembleDebug \
             :xtcrash-sample:assembleDebug
