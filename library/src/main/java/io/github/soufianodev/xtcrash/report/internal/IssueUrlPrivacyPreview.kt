@@ -87,6 +87,6 @@ internal object IssueUrlPrivacyPreviewBuilder {
 internal object IssueUrlPrivacyConfirmationComposer {
     fun compose(manualPasteNote: String?, destinationMessage: String): String {
         val note = manualPasteNote?.takeIf { it.isNotBlank() } ?: return destinationMessage
-        return "$note\\n\\n$destinationMessage"
+        return "$note\n\n$destinationMessage"
     }
 }
