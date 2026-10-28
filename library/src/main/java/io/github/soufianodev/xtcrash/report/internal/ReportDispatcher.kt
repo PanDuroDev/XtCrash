@@ -598,12 +598,22 @@ class ReportDispatcher(
         } else {
             null
         }
-        val message = context.getString(
-            R.string.xtcrash_report_url_privacy_destination,
-            destinationLabel,
-            destinationUrl,
-            details,
-        )
+        val message = if (fields.isEmpty()) {
+            context.getString(
+                R.string.xtcrash_report_url_privacy_destination,
+                destinationLabel,
+                destinationUrl,
+                details,
+            )
+        } else {
+            // Preserve the legacy two-argument resource contract so apps that
+            // customize this notice do not silently fall back to English.
+            context.getString(
+                R.string.xtcrash_report_url_privacy_message,
+                destinationLabel,
+                "$destinationUrl\n\n$details",
+            )
+        }
         return IssueUrlPrivacyConfirmationComposer.compose(manualPasteNote, message)
     }
 
