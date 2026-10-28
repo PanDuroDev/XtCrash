@@ -598,22 +598,19 @@ class ReportDispatcher(
         } else {
             null
         }
-        val message = if (fields.isEmpty()) {
-            context.getString(
-                R.string.xtcrash_report_url_privacy_destination,
-                destinationLabel,
-                destinationUrl,
-                details,
-            )
-        } else {
-            // Preserve the legacy two-argument resource contract so apps that
-            // customize this notice do not silently fall back to English.
-            context.getString(
-                R.string.xtcrash_report_url_privacy_message,
-                destinationLabel,
-                "$destinationUrl\n\n$details",
-            )
-        }
+        val previewText = "$destinationUrl\n\n$details"
+        // Keep the legacy resource so existing app translations still apply.
+        // A customized translation may omit %2$s; guarantee the preview remains
+        // visible instead of relying on Formatter to consume every argument.
+        val formattedMessage = context.getString(
+            R.string.xtcrash_report_url_privacy_message,
+            destinationLabel,
+            previewText,
+        )
+        val message = IssueUrlPrivacyConfirmationComposer.ensurePreviewVisible(
+            formattedMessage,
+            previewText,
+        )
         return IssueUrlPrivacyConfirmationComposer.compose(manualPasteNote, message)
     }
 
