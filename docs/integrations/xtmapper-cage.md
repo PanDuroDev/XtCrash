@@ -81,6 +81,8 @@ The change does not authorize background uploads or silently submit an issue. Th
 
 - Fork branch commit tested: `7023a85d8d420448a9350e3d92692b6e0d3e0401`.
 - GitHub Actions run [40735898417](https://github.com/PanDuroDev/XtCrash/actions/runs/40735898417) completed successfully on 2026-10-28. Both the unit-test/compile step and lint/assemble step passed. Gradle reported deprecation warnings for features incompatible with Gradle 10; these warnings did not fail the run.
+- The documentation-only follow-up commit `f713b86b275c3b6df12925d268db862681966b6d` was also checked by [CI run 40739156373](https://github.com/PanDuroDev/XtCrash/actions/runs/40739156373), which completed successfully. The unit-test/compile, lint, and assembly steps all passed on that commit.
+- The current branch contains regression tests for the privacy-confirmation contract: GitLab.com and self-hosted GitLab previews (including explicit ports), title/body values decoded from the final prepared URL, shortened prefill behavior, plaintext-HTTP warnings including bare URLs, and truthful clipboard/manual-paste guidance. These tests are covered by `:library:testDebugUnitTest` in the successful CI run.
 - This validates the current XtCrash branch's compilation, listed unit tests, lint task, and debug assembly only. It does **not** validate runtime UI behavior, Android device behavior, the XtMapper draft build, native/JNI, Waydroid, or host/browser transport.
 
 **Release decision:** keep Issue #26 open. The source API is promising and the SDK baseline is compatible, but full compatibility cannot honestly be called 100% until the moving XtMapper draft is stabilized and the real host transport/browser handoff passes the end-to-end checks.
