@@ -37,19 +37,24 @@ jobs:
             ln -s android-37.0 "$ANDROID_HOME/platforms/android-37"
           fi
 
-      - name: Set up Gradle
+      - name: Set up pinned Gradle distribution
         uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '9.4.1'
 
+      # The repository wrapper JAR currently has a hash not yet recognized by
+      # Gradle's wrapper validator. CI uses the pinned official distribution
+      # directly rather than disabling wrapper validation or executing that JAR.
       - name: Run unit tests and compile modules
         run: |
-          ./gradlew --no-daemon \
+          gradle --no-daemon \
             :library:testDebugUnitTest \
             :library:compileDebugKotlin \
             :xtcrash-compose:compileDebugKotlin
 
       - name: Run lint and assemble consumer artifacts
         run: |
-          ./gradlew --no-daemon \
+          gradle --no-daemon \
             :library:lintDebug \
             :library:assembleDebug \
             :xtcrash-compose:assembleDebug \
