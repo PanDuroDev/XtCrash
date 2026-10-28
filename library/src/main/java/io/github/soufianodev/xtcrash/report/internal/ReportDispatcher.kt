@@ -563,15 +563,41 @@ class ReportDispatcher(
      * only claims a clipboard copy when one actually succeeded.
      */
     private fun privacyDialogMessage(prepared: PreparedReport): String {
-        val label = if (prepared.destination == ReportDestination.GITHUB) "GitHub" else "GitLab"
-        val message = context.getString(R.string.xtcrash_report_url_privacy_message, label, prefillBody)
-        if (!prepared.prefillOmitsReport) return message
-        val note = if (prepared.reportCopiedToClipboard) {
-            context.getString(R.string.xtcrash_report_manual_paste)
-        } else {
-            context.getString(R.string.xtcrash_report_manual_paste_not_copied)
+        val url = prepared.url ?: return "No valid issue URL is available."
+        val uri = Uri.parse(url)
+        val scheme = uri.scheme?.lowercase() ?: "unknown"
+        val host = buildString {
+            append(uri.host ?: "unknown host")
+            if (uri.port != -1) append(":").append(uri.port)
         }
-        return message + "\n\n" + note
+        val isGitHub = prepared.destination == ReportDestination.GITHUB
+        val titleKey = if (isGitHub) "title" else "issue[title]"
+        val bodyKey = if (isGitHub) "body" else "issue[description]"
+        val names = uri.queryParameterNames
+        val title = if (titleKey in names) uri.getQueryParameter(titleKey) else null
+        val body = if (bodyKey in names) uri.getQueryParameter(bodyKey) else null
+        val fields = mutableListOf<String>()
+        if (titleKey in names) fields += "Title: \"" + (title ?: "") + "\""
+        if (bodyKey in names) fields += "Description: \"" + (body ?: "") + "\""
+        val details = if (fields.isEmpty()) {
+            "The URL does not prefill a title or description; you will need to enter them on the issue page."
+        } else {
+            "Fields present in the URL:\n" + fields.joinToString("\n")
+        }
+        var message = "Open $scheme://$host? The destination may receive values in this URL before you submit the issue.\n\n$details"
+        val carriesPrefillContent = !title.isNullOrEmpty() || !body.isNullOrEmpty()
+        if (scheme == "http" && carriesPrefillContent) {
+            message += "\n\nWarning: this page uses unencrypted HTTP. The prefilled issue content in the URL may be exposed to networks or intermediaries between you and $host. Use this link only if you trust the connection."
+        }
+        if (prepared.prefillOmitsReport) {
+            val note = if (prepared.reportCopiedToClipboard) {
+                context.getString(R.string.xtcrash_report_manual_paste)
+            } else {
+                context.getString(R.string.xtcrash_report_manual_paste_not_copied)
+            }
+            message += "\n\n" + note
+        }
+        return message
     }
 
     /**
