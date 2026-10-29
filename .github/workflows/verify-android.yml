@@ -152,9 +152,10 @@ jobs:
           gradle-version: '9.4.1'
           validate-wrappers: false
 
-      # Enable R8 only for this verification run; default release builds remain unchanged.
+      # Enable R8 for the core library and sample app only for this verification run.
+      # The Compose library remains unminified; its consuming app performs shrinking.
       # No binaries, test files, or test reports are uploaded.
-      - name: Assemble minified release variants without build cache
+      - name: Assemble R8-enabled core and sample release without build cache
         run: |
           gradle --no-daemon --no-build-cache --rerun-tasks --stacktrace -PverifyR8=true \
             :library:assembleRelease \
