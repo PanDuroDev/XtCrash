@@ -39,7 +39,7 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled project.hasProperty('verifyR8')
             consumerProguardFiles 'consumer-rules.pro'
         }
     }
