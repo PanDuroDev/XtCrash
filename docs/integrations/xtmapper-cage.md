@@ -304,3 +304,27 @@ The preceding report-only commit `7598ed64b7e2e9630a986d472798153f86d2239f` pass
 ### Phase 2 status
 
 **Still BLOCKED / NOT VERIFIED.** A true external consumer test needs a runner with network access and Gradle dependency resolution. It must use a confirmed owner/ref, download the POM/AAR from JitPack, compile against the public API, and assemble a minified consumer release. Until that run succeeds, the published coordinate must not be treated as verified or added to XtMapper.
+
+
+## Phase 9 — JitPack coordinate mapping review (2026-10-29)
+
+### Additional finding
+
+The JitPack publishing path has a second issue to resolve before the external-consumer gate can pass:
+
+- The root Gradle settings include three modules: `:xtcrash-sample`, `:library`, and `:xtcrash-compose`.
+- JitPack's multi-module guidance documents individual module coordinates in the form `com.github.User.Repo:Module:Tag`; its Android publishing guide also requires checking that the selected publication installs to Maven Local.
+- The current `:library` publication explicitly sets `groupId = com.github.SoufianoDev`, `artifactId = xtcrash`, and `version = 1.0.0`, while `jitpack.yml` invokes `:library:publishToMavenLocal`.
+- This custom coordinate does not follow JitPack's documented default multi-module coordinate pattern. Custom Maven publication coordinates can be valid, but their actual availability through JitPack's resolver must be demonstrated rather than assumed. The current web lookup did not expose a project-specific build row or an inspectable POM/AAR, so this remains a **coordinate-resolution risk**, not a confirmed publication failure.
+
+References:
+- JitPack multi-module and build guidance: https://docs.jitpack.io/building/
+- JitPack Android publishing checks: https://docs.jitpack.io/android/
+
+### Required next verification
+
+On a network-enabled runner, first inspect the Maven-local output of `:library:publishToMavenLocal` and confirm the exact generated POM path and coordinates. Then use a clean external Gradle project to request that exact dependency from JitPack and verify that the resolved POM/AAR matches the expected source/ref. Do not change the public coordinates or add a dependency to XtMapper until this succeeds and repository ownership is resolved.
+
+### Updated Phase 2 decision
+
+**BLOCKED / NOT VERIFIED.** The source CI remains green, but no remote artifact resolution has been proven. This report update does not add test files, upload artifacts, create a tag/release, or modify XtMapper.
