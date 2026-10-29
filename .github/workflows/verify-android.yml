@@ -152,8 +152,8 @@ jobs:
           gradle-version: '9.4.1'
           validate-wrappers: false
 
-      # Enable R8 for the core library and sample app only for this verification run.
-      # The Compose library remains unminified; its consuming app performs shrinking.
+      # Android library AARs must retain their public API; consumer-side R8 is tested in the sample app.
+      # Keep both library modules unminified and enable R8 only for the final consuming application.
       # No binaries, test files, or test reports are uploaded.
       - name: Assemble R8-enabled core and sample release without build cache
         run: |
