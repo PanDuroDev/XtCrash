@@ -214,3 +214,39 @@ This confirms the audit report and the existing XtCrash branch build/test/lint/a
 | Remote-start failure rollback and delayed-callback regression tests | **NOT FIXED / NOT RUN in an authorized fork** |
 | Published XtCrash artifact and external consumer | **NOT VERIFIED** |
 | Android device / Waydroid end-to-end | **NOT RUN** |
+
+
+## Phase 6 — R8 consumer-side verification closure (2026-10-29)
+
+### Verified CI result
+
+The latest R8-focused workflow, [run 40938770467](https://github.com/PanDuroDev/XtCrash/actions/runs/40938770467), completed with **success** on commit `fa0fee61a32c0443050808ec50b64794215682ac`. All four isolated jobs passed:
+
+- `Isolated unit tests`
+- `Isolated lint`
+- `Isolated consumer assembly`
+- `Isolated release packaging`, including `-PverifyR8=true` and release assembly for the core library, Compose module, and sample app
+
+This is evidence that the current source builds with R8 enabled for the final sample application and that the existing unit-test, lint, and consumer-assembly gates pass. The previous R8 failure on `:xtcrash-compose:minifyReleaseWithR8` is no longer reproduced under the corrected configuration.
+
+### Build configuration decision
+
+Android library AARs should preserve the public API for the consuming app's R8 pass. The core library's release build now stays unminified by default; the sample consumer enables minification only in the explicit verification run. The Compose library remains unminified and is shrunk as part of its consumer application. This CI result is a build-level verification, not a device/runtime test or proof that every consumer's custom R8 rules are correct.
+
+### Next gate: publication and external consumer
+
+The GitHub Releases API returned an empty list for both `PanDuroDev/XtCrash` and `SoufianoDev/XtCrash` at the time of this check. No release was created during this audit. The declared Gradle publishing properties (`com.github.SoufianoDev:xtcrash:1.0.0`) are still not proof of a real published artifact. An external Gradle consumer resolving the artifact has not yet been demonstrated, so the coordinate must remain **unverified** and must not be added to XtMapper.
+
+Next, verify the exact tag/ref and JitPack artifact availability, then build a minimal external consumer against the real public artifact without uploading test files or reports. If publication cannot be confirmed, record the precise blocker rather than inventing coordinates. After that, the remaining major gates are an authorized XtMapper integration fork, merged-manifest inspection, device-level crash/privacy behavior, and cage-xtmapper/Waydroid host-browser handoff.
+
+### Phase 6 gate summary
+
+| Gate | Result |
+|---|---|
+| Unit tests | **PASS** — run 40938770467 |
+| Lint | **PASS** — run 40938770467 |
+| Consumer module assembly | **PASS** — run 40938770467 |
+| R8-enabled release packaging | **PASS** — run 40938770467 |
+| GitHub release / published tag | **NOT VERIFIED** |
+| External Gradle consumer resolves artifact | **NOT RUN** |
+| XtMapper integration / Android runtime / Waydroid E2E | **BLOCKED / NOT RUN** |
