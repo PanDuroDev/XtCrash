@@ -250,3 +250,35 @@ Next, verify the exact tag/ref and JitPack artifact availability, then build a m
 | GitHub release / published tag | **NOT VERIFIED** |
 | External Gradle consumer resolves artifact | **NOT RUN** |
 | XtMapper integration / Android runtime / Waydroid E2E | **BLOCKED / NOT RUN** |
+
+
+## Phase 7 — publication and external-consumer verification (2026-10-29)
+
+### What was verified
+
+- The latest R8-focused build remains green: [run 40938770467](https://github.com/PanDuroDev/XtCrash/actions/runs/40938770467) passed all four jobs, including consumer-side R8 release packaging. The follow-up report commit also passed [run 40940769408](https://github.com/PanDuroDev/XtCrash/actions/runs/40940769408).
+- The repository already has a `jitpack.yml` that selects `openjdk21` and runs `./gradlew clean :library:publishToMavenLocal -x test`. This is useful JitPack build configuration, but it is not proof that JitPack actually built or serves the artifact.
+- The Gradle wrapper is pinned to Gradle 9.4.1 and the root build uses Android Gradle Plugin 9.2.1. The library module's publishing script declares the artifact as `com.github.SoufianoDev:xtcrash:1.0.0`.
+- The public GitHub Releases API was previously checked for both `PanDuroDev/XtCrash` and `SoufianoDev/XtCrash`; both returned empty release lists. The public JitPack page is generic and did not provide a project-specific successful build record in this audit. Attempts to verify the exact POM/build-log endpoints did not return inspectable artifact/build evidence. Therefore this is **not proof the artifact is absent**, but its availability remains unverified.
+- There is an ownership/coordinate concern: this working repository is `PanDuroDev/XtCrash`, while the publication metadata and SCM URLs still identify `SoufianoDev/XtCrash`. Do not publish or consume the fork under the upstream owner's namespace without confirming that the upstream owner intends and authorizes that release. A fork's CI success does not establish that the upstream coordinate resolves to this fork's code.
+
+### External consumer result
+
+**NOT VERIFIED — no external Gradle consumer has yet resolved the public AAR and compiled against its API.** The successful local sample-app/CI build validates the checked-out source and consumer-side R8 behavior; it does not validate a remote Maven coordinate. No dependency was added to XtMapper, no tag/release was created, and no test artifacts were uploaded.
+
+### Phase 2 decision
+
+The repository configuration is partly prepared for JitPack, but the actual publication gate remains **BLOCKED / NOT VERIFIED**. The gate can only be closed with both:
+1. An authorized, immutable version/ref with unambiguous ownership and coordinates.
+2. A clean external Gradle consumer build that downloads the AAR/POM from JitPack, compiles against the public XtCrash API, and (for the minified-consumer case) completes release/R8 assembly.
+
+Until then, do not treat `com.github.SoufianoDev:xtcrash:1.0.0` as a verified dependency and do not add it to XtMapper.
+
+| Phase 2 sub-gate | Result |
+|---|---|
+| JitPack build configuration present | **PASS — configuration exists; not a remote build result** |
+| Repository release list | **NONE LISTED** for the checked fork and upstream |
+| Project-specific successful JitPack build / POM / AAR | **NOT VERIFIED** |
+| Coordinate ownership is unambiguous | **NO — fork metadata still names upstream owner** |
+| External Gradle consumer resolves and compiles remote artifact | **NOT RUN / NOT VERIFIED** |
+| XtMapper dependency change | **NOT MADE** |
