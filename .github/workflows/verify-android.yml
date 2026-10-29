@@ -152,10 +152,11 @@ jobs:
           gradle-version: '9.4.1'
           validate-wrappers: false
 
-      # Build release variants independently; no binaries or test reports are uploaded.
-      - name: Assemble release variants without build cache
+      # Enable R8 only for this verification run; default release builds remain unchanged.
+      # No binaries, test files, or test reports are uploaded.
+      - name: Assemble minified release variants without build cache
         run: |
-          gradle --no-daemon --no-build-cache --rerun-tasks --stacktrace \
+          gradle --no-daemon --no-build-cache --rerun-tasks --stacktrace -PverifyR8=true \
             :library:assembleRelease \
             :xtcrash-compose:assembleRelease \
             :xtcrash-sample:assembleRelease
