@@ -34,9 +34,8 @@ android {
         versionName "1.0.0"
     }
     buildTypes {
-        release {
-            minifyEnabled project.hasProperty('verifyR8')
-        }
+        // Android library shrinking is performed by the consuming application.
+        // Keep this module unminified; verify R8 against the final app in the sample module.
     }
     buildFeatures {
         compose = true
