@@ -35,7 +35,7 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled project.hasProperty('verifyR8')
         }
     }
     buildFeatures {
