@@ -282,3 +282,25 @@ Until then, do not treat `com.github.SoufianoDev:xtcrash:1.0.0` as a verified de
 | Coordinate ownership is unambiguous | **NO — fork metadata still names upstream owner** |
 | External Gradle consumer resolves and compiles remote artifact | **NOT RUN / NOT VERIFIED** |
 | XtMapper dependency change | **NOT MADE** |
+
+
+## Phase 8 — local external-consumer test attempt (2026-10-29)
+
+### Attempt and environment result
+
+I attempted to clone the exact audit branch into a clean local workspace so I could build a separate Gradle consumer against the remote JitPack artifact. The attempt was blocked before project configuration or compilation:
+
+- Java 21 is installed in the execution environment.
+- A system Gradle installation is not present.
+- `git clone https://github.com/PanDuroDev/XtCrash.git` failed because the environment could not resolve `github.com` (DNS/network access unavailable).
+- Direct access to the JitPack artifact/POM/build-log endpoints was also not available through the local execution environment; the web lookup did not expose a project-specific successful build record.
+
+This is an **environment/network blocker**, not a failing XtCrash test. No claim is made that Gradle resolution or the artifact itself failed. No test files, artifacts, tags, or releases were added to the repository.
+
+### CI result for this report update
+
+The preceding report-only commit `7598ed64b7e2e9630a986d472798153f86d2239f` passed [workflow run 40941330644](https://github.com/PanDuroDev/XtCrash/actions/runs/40941330644), with all isolated jobs successful. That run validates the checked-out project tests/build/lint/R8 gates, but it does not substitute for a remote external consumer resolving a published Maven artifact.
+
+### Phase 2 status
+
+**Still BLOCKED / NOT VERIFIED.** A true external consumer test needs a runner with network access and Gradle dependency resolution. It must use a confirmed owner/ref, download the POM/AAR from JitPack, compile against the public API, and assemble a minified consumer release. Until that run succeeds, the published coordinate must not be treated as verified or added to XtMapper.
