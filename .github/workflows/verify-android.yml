@@ -294,9 +294,8 @@ jobs:
           validate-wrappers: false
 
       - name: Resolve exact fork commit from JitPack in a clean consumer
-        env:
-          JITPACK_VERSION: ${GITHUB_SHA::7}
         run: |
+          JITPACK_VERSION="${GITHUB_SHA::7}"
           consumer="$RUNNER_TEMP/xtcrash-jitpack-consumer"
           mkdir -p "$consumer/app/src/main/java/consumer"
           cat > "$consumer/settings.gradle" <<'EOF'
