@@ -161,3 +161,107 @@ jobs:
             :library:assembleRelease \
             :xtcrash-compose:assembleRelease \
             :xtcrash-sample:assembleRelease
+
+  maven-local-consumer:
+    name: Maven-local publication and external consumer smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-37.0" "build-tools;36.0.0" "platform-tools"
+          if [ -d "$ANDROID_HOME/platforms/android-37.0" ] && [ ! -e "$ANDROID_HOME/platforms/android-37" ]; then
+            ln -s android-37.0 "$ANDROID_HOME/platforms/android-37"
+          fi
+
+      - name: Set up pinned Gradle distribution
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '9.4.1'
+          validate-wrappers: false
+
+      - name: Publish release to Maven Local and inspect coordinates
+        run: |
+          gradle --no-daemon --no-build-cache --rerun-tasks --stacktrace \
+            :library:publishToMavenLocal
+          artifact_dir="$HOME/.m2/repository/com/github/SoufianoDev/xtcrash/1.0.0"
+          test -s "$artifact_dir/xtcrash-1.0.0.pom"
+          test -s "$artifact_dir/xtcrash-1.0.0.aar"
+          grep -q '<groupId>com.github.SoufianoDev</groupId>' "$artifact_dir/xtcrash-1.0.0.pom"
+          grep -q '<artifactId>xtcrash</artifactId>' "$artifact_dir/xtcrash-1.0.0.pom"
+          grep -q '<version>1.0.0</version>' "$artifact_dir/xtcrash-1.0.0.pom"
+          unzip -t "$artifact_dir/xtcrash-1.0.0.aar"
+          echo "Verified Maven-local POM/AAR at $artifact_dir"
+          cat "$artifact_dir/xtcrash-1.0.0.pom"
+
+      - name: Create a clean external Android consumer
+        run: |
+          consumer="$RUNNER_TEMP/xtcrash-external-consumer"
+          mkdir -p "$consumer/app/src/main/java/consumer"
+          cat > "$consumer/settings.gradle" <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositories {
+                  mavenLocal()
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = 'XtCrashExternalConsumer'
+          include ':app'
+          EOF
+          cat > "$consumer/build.gradle" <<'EOF'
+          plugins {
+              id 'com.android.application' version '9.2.1' apply false
+          }
+          EOF
+          cat > "$consumer/app/build.gradle" <<'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'consumer.xtcrash.smoke'
+              compileSdk 37
+              defaultConfig {
+                  applicationId 'consumer.xtcrash.smoke'
+                  minSdk 23
+              }
+          }
+          dependencies {
+              implementation 'com.github.SoufianoDev:xtcrash:1.0.0'
+          }
+          EOF
+          cat > "$consumer/app/src/main/AndroidManifest.xml" <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application />
+          </manifest>
+          EOF
+          cat > "$consumer/app/src/main/java/consumer/ArtifactApiSmoke.java" <<'EOF'
+          package consumer;
+          import io.github.soufianodev.xtcrash.CrashActivity;
+          final class ArtifactApiSmoke {
+              Class<?> libraryEntryPoint() {
+                  return CrashActivity.class;
+              }
+          }
+          EOF
+          gradle --no-daemon --no-build-cache --stacktrace \
+            -p "$consumer" :app:compileDebugJavaWithJavac
