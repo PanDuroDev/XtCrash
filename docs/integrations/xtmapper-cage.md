@@ -328,3 +328,43 @@ On a network-enabled runner, first inspect the Maven-local output of `:library:p
 ### Updated Phase 2 decision
 
 **BLOCKED / NOT VERIFIED.** The source CI remains green, but no remote artifact resolution has been proven. This report update does not add test files, upload artifacts, create a tag/release, or modify XtMapper.
+
+
+## Phase 10 — Git ref and repository ownership verification (2026-10-30)
+
+### Newly verified GitHub state
+
+The GitHub repository API was checked directly for both repositories:
+
+- `PanDuroDev/XtCrash` exists and is a fork whose parent is `SoufianoDev/XtCrash`.
+- `SoufianoDev/XtCrash` is the upstream repository.
+- The GitHub Git References API returned an empty list for tag refs in both repositories at the time of this check.
+- The GitHub Releases API returned an empty list for both repositories.
+
+This is stronger than checking only the Releases page: neither repository currently exposes a Git tag ref that could identify a versioned JitPack build. It does not prove that no arbitrary JitPack build exists for a commit or branch, but it means the declared `1.0.0` cannot currently be tied to a published Git tag in either repository.
+
+### Consequence for the planned coordinate
+
+The library module still hardcodes:
+
+- Group: `com.github.SoufianoDev`
+- Artifact: `xtcrash`
+- Version: `1.0.0`
+- SCM URL: `https://github.com/SoufianoDev/XtCrash`
+
+The code under audit is in the `PanDuroDev/XtCrash` fork. JitPack's documented multi-module default convention is `com.github.User.Repo:Module:Tag`; this project instead declares a custom Maven publication. That custom publication may be usable, but it must be tested against the exact fork/ref and cannot be inferred from the source configuration.
+
+JitPack's documented build-status API was identified, but the API endpoint and artifact endpoints were not accessible through the available web retrieval environment during this check. No JitPack status or artifact existence is therefore claimed.
+
+### Required decision before publication
+
+The repository owner must choose which repository is the intended publishing source:
+
+1. Publish from `SoufianoDev/XtCrash` only if the upstream owner intends that release and its source is the intended code; or
+2. Publish the fork under `PanDuroDev/XtCrash` with matching group/SCM metadata and an immutable ref, after confirming that is the intended ownership.
+
+Do not silently repoint coordinates, create a tag/release, or add the dependency to XtMapper as part of this audit. Once the publishing source and ownership are explicit, run a network-enabled external Gradle consumer against the resulting exact coordinates and verify POM, AAR, public API compilation, and minified release assembly.
+
+### Phase 2 gate
+
+**BLOCKED / NOT VERIFIED.** No tags or GitHub Releases exist in either checked repository; no successful JitPack build or external Gradle consumer resolution has been demonstrated. The successful source CI and R8 consumer checks remain valid, but they do not close publication verification. No test files or artifacts were uploaded, no tag/release was created, and XtMapper was not modified.
