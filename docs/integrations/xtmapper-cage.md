@@ -397,3 +397,44 @@ The JitPack build-status API URLs for both the upstream repository and the fork,
 - XtMapper dependency change: **NOT MADE**.
 
 **Phase 2 remains BLOCKED / NOT VERIFIED.** The next meaningful technical step is a network-enabled runner that publishes to Maven Local, records the generated POM/AAR coordinates, then tests a clean Android consumer against the actual JitPack artifact after the publishing repository and immutable ref are explicitly selected. The latest CI success does not substitute for that test.
+
+
+## Phase 12 — remote JitPack consumer attempt and retry (2026-10-31)
+
+### First remote attempt
+
+The corrected fork-commit consumer job ran in workflow run [41079071223](https://github.com/PanDuroDev/XtCrash/actions/runs/41079071223), against commit `51a829ae04202d17683018ddc7d783bb44540122`.
+
+The clean consumer requested:
+
+```
+com.github.PanDuroDev.XtCrash:library:51a829a
+```
+
+Gradle attempted to retrieve the POM from:
+
+```
+https://jitpack.io/com/github/PanDuroDev/XtCrash/library/51a829a/library-51a829a.pom
+```
+
+The request ended with `java.net.SocketTimeoutException: Read timed out` after approximately two minutes. The job therefore failed during remote dependency retrieval. This is a network timeout; the available log does **not** establish whether JitPack built the commit successfully, whether the coordinate is invalid, or whether the artifact is absent.
+
+### Retry
+
+The failed JitPack job alone was re-run using GitHub Actions job retry. The retry job ID is `124426724231`. At the time of this report update it was still **in progress**, before reaching the dependency-resolution step. No retry outcome is claimed yet.
+
+### Other jobs in the same workflow run
+
+The following jobs completed successfully:
+
+- Isolated unit tests
+- Isolated consumer assembly
+- Isolated lint
+- Isolated release packaging, including the R8-enabled sample consumer
+- Maven-local publication and external consumer smoke test
+
+### Current Phase 2 gate
+
+**BLOCKED / NOT VERIFIED.** Maven Local publication and a clean local-repository consumer are verified. JitPack remote resolution remains unverified because the first attempt timed out and the retry has not completed. The fork coordinate tested here is exploratory and does not validate the declared `com.github.SoufianoDev:xtcrash:1.0.0` coordinate.
+
+No tag or release was created, no artifact was uploaded, no XtMapper dependency was changed, and phases 3 and 4 remain untouched.
