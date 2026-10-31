@@ -438,3 +438,23 @@ The following jobs completed successfully:
 **BLOCKED / NOT VERIFIED.** Maven Local publication and a clean local-repository consumer are verified. JitPack remote resolution remains unverified because the first attempt timed out and the retry has not completed. The fork coordinate tested here is exploratory and does not validate the declared `com.github.SoufianoDev:xtcrash:1.0.0` coordinate.
 
 No tag or release was created, no artifact was uploaded, no XtMapper dependency was changed, and phases 3 and 4 remain untouched.
+
+
+### Retry outcome — completed (2026-10-31)
+
+The retry job `124426724231` has now completed and also failed, but with a different and more informative result than the first attempt. Gradle reached dependency resolution and reported:
+
+```
+ModuleVersionNotFoundException:
+Could not find com.github.PanDuroDev.XtCrash:library:51a829a
+```
+
+It searched Google Maven, Maven Central, and the configured JitPack repository. The JitPack POM path requested was:
+
+```
+https://jitpack.io/com/github/PanDuroDev/XtCrash/library/51a829a/library-51a829a.pom
+```
+
+This confirms that the tested coordinate was **not resolvable by the clean consumer at the time of the retry**. It does not by itself distinguish among a missing JitPack build, a failed JitPack build, or an incorrect module coordinate. The JitPack build log/status for this exact commit and the produced artifact metadata still need direct confirmation before attributing the failure to source configuration.
+
+The retry did not time out: dependency resolution returned a not-found result in approximately 31 seconds. Phase 2 therefore remains blocked. Maven Local remains independently verified.
