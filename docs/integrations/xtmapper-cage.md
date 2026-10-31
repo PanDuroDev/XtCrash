@@ -458,3 +458,48 @@ https://jitpack.io/com/github/PanDuroDev/XtCrash/library/51a829a/library-51a829a
 This confirms that the tested coordinate was **not resolvable by the clean consumer at the time of the retry**. It does not by itself distinguish among a missing JitPack build, a failed JitPack build, or an incorrect module coordinate. The JitPack build log/status for this exact commit and the produced artifact metadata still need direct confirmation before attributing the failure to source configuration.
 
 The retry did not time out: dependency resolution returned a not-found result in approximately 31 seconds. Phase 2 therefore remains blocked. Maven Local remains independently verified.
+
+
+## Phase 13 — correction of the JitPack coordinate test (2026-10-31)
+
+### Finding
+
+The failed remote consumer in phase 12 requested the conventional multi-module coordinate:
+
+```
+com.github.PanDuroDev.XtCrash:library:51a829a
+```
+
+However, inspection of `library/build.gradle` and `scripts/publish-module.gradle` shows that the project creates a custom Maven publication with:
+
+```
+groupId    = com.github.SoufianoDev
+artifactId = xtcrash
+version    = 1.0.0
+```
+
+The custom publication identity is explicit in the `MavenPublication`; therefore the earlier consumer request did **not** match the publication identity configured by the project. The retry's `ModuleVersionNotFoundException` proves only that the requested conventional coordinate was not resolvable. It is not a valid test of the declared custom coordinate.
+
+JitPack's Android publishing guide explicitly demonstrates setting custom `groupId`, `artifactId`, and `version` in a `MavenPublication`, and recommends validating the publication with `publishToMavenLocal`. Its multi-module guide describes the default `com.github.User.Repo:Module:Tag` convention. These are distinct coordinate strategies; a custom publication must be tested using its actual identity. References: https://docs.jitpack.io/android/ and https://docs.jitpack.io/building/.
+
+### Why the fork test cannot simply be changed to the custom coordinate
+
+The custom publication metadata identifies `SoufianoDev/XtCrash`, including its SCM URL, developer identity, group ID, and fixed version `1.0.0`. The CI test source, however, is the `PanDuroDev/XtCrash` fork and uses a commit hash as its requested JitPack version. Those identities do not line up. Replacing the dependency string alone would still not prove that the fork commit is being published under the declared upstream coordinates or that the fixed `1.0.0` maps to that commit.
+
+### Correct next gate
+
+Before changing the publishing configuration or adding another consumer test, the intended publishing source must be selected:
+
+1. **Upstream publication:** verify the exact intended commit exists in `SoufianoDev/XtCrash`, then test the project's declared custom coordinates against that upstream repository/ref.
+2. **Fork publication:** explicitly authorize `PanDuroDev/XtCrash` as the publishing source, then align the JitPack publication identity and SCM metadata with that repository and test its resulting custom coordinates.
+
+Until that decision is made, do not rewrite group/artifact/version metadata, create a tag/release, or add the dependency to XtMapper.
+
+### Corrected Phase 2 status
+
+- Maven Local publication and clean external consumer: **PASS** for `com.github.SoufianoDev:xtcrash:1.0.0`.
+- JitPack conventional fork coordinate `com.github.PanDuroDev.XtCrash:library:51a829a`: **NOT RESOLVABLE** in the retry; this does not test the configured custom publication.
+- JitPack resolution of the declared custom publication: **NOT VERIFIED**.
+- Publishing source ownership (upstream vs fork): **UNRESOLVED**.
+
+**Phase 2 remains BLOCKED / NOT VERIFIED.** No publication metadata was changed, no tag/release was created, no artifact was uploaded, and XtMapper remains untouched.
