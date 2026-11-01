@@ -570,3 +570,18 @@ This confirms that removing the mismatched conventional-coordinate JitPack probe
 **Phase 2 remains PARTIALLY VERIFIED / BLOCKED.** The remaining blocker is not a demonstrated source/build failure; it is the unresolved publishing authority and the lack of a valid remote test against the owner-approved repository/ref and coordinates.
 
 No publication metadata was changed, no tag/release was created, no artifact was uploaded, and XtMapper was not modified. Do not begin phases 3 or 4 until the publication source and artifact identity are confirmed.
+
+
+
+## Phase 16 — re-check related XtMapper upstream PR state (2026-11-01)
+
+The related upstream XtMapper pull request [#5](https://github.com/SoufianoDev/XtMapper/pull/5) is now reported by GitHub as **merged**, not draft/open:
+
+- Merged at: `2026-10-31T03:59:23Z`
+- Merge commit: `87839d68d015e81cdd4e686498de1c2891a23dcf`
+- PR head at merge: `232acfa35597c9fdef796fc16388256eec795163`
+- Base branch: `dev`
+
+Its body identifies it as an upstream reconciliation / XtLogger integration checkpoint and explicitly states that XtCrash publication and the cage-xtmapper host-reporting proof of concept remain out of scope. Therefore this merge does not resolve XtCrash publication ownership, does not validate a remote XtCrash artifact, and does not authorize changing XtMapper's XtCrash dependency.
+
+This is recorded only to correct the previously stale status description. No XtMapper files or pull requests were modified as part of this audit.
