@@ -540,3 +540,33 @@ The JitPack gate is deliberately left **NOT VERIFIED** until the publishing repo
 ### Phase 2 status
 
 **PARTIALLY VERIFIED / BLOCKED.** Local Maven publication and independent consumer compilation pass. JitPack remote publication remains unverified. The next safe step is to obtain explicit confirmation from the upstream owner that the canonical source and intended release are `SoufianoDev/XtCrash`, then test that exact repository's custom publication using a clean remote consumer. Do not change the group, artifact, version, SCM metadata, or XtMapper dependency before that confirmation.
+
+
+
+## Phase 15 — corrected CI fully green (2026-11-01)
+
+### Workflow run after removing the invalid JitPack probe
+
+Workflow run [41258484943](https://github.com/PanDuroDev/XtCrash/actions/runs/41258484943) completed successfully on commit `f7c3c7fecd45e36dbbd39c570c6442a6568458b7`.
+
+All five remaining jobs completed with `success`:
+
+- Isolated consumer assembly
+- Isolated release packaging
+- Maven-local publication and external consumer smoke test
+- Isolated lint
+- Isolated unit tests
+
+This confirms that removing the mismatched conventional-coordinate JitPack probe restored a meaningful green CI workflow. It does **not** establish that the custom Maven publication is available from JitPack's remote repository.
+
+### Updated Phase 2 evidence
+
+- Source/build/test/lint and isolated consumer checks: **PASS**.
+- Maven Local publication plus clean external Android consumer compilation: **PASS**.
+- Corrected CI run `41258484943`: **PASS (5/5 jobs)**.
+- JitPack remote resolution for the declared custom publication: **NOT VERIFIED**.
+- Canonical publishing source and release ownership: **UNRESOLVED**.
+
+**Phase 2 remains PARTIALLY VERIFIED / BLOCKED.** The remaining blocker is not a demonstrated source/build failure; it is the unresolved publishing authority and the lack of a valid remote test against the owner-approved repository/ref and coordinates.
+
+No publication metadata was changed, no tag/release was created, no artifact was uploaded, and XtMapper was not modified. Do not begin phases 3 or 4 until the publication source and artifact identity are confirmed.
