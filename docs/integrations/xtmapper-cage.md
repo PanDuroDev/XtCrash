@@ -585,3 +585,36 @@ The related upstream XtMapper pull request [#5](https://github.com/SoufianoDev/X
 Its body identifies it as an upstream reconciliation / XtLogger integration checkpoint and explicitly states that XtCrash publication and the cage-xtmapper host-reporting proof of concept remain out of scope. Therefore this merge does not resolve XtCrash publication ownership, does not validate a remote XtCrash artifact, and does not authorize changing XtMapper's XtCrash dependency.
 
 This is recorded only to correct the previously stale status description. No XtMapper files or pull requests were modified as part of this audit.
+
+
+
+## Phase 17 — authoritative upstream publication gate discovered (2026-11-01)
+
+A search of the canonical upstream repository found [Issue #26](https://github.com/SoufianoDev/XtCrash/issues/26), which is the maintainer's explicit release gate for XtCrash v1.0.0. This supersedes the earlier assumption that the next action should simply be to ask which repository owns publication.
+
+Issue #26 states:
+
+- v1.0.0 is intentionally unpublished.
+- The documented JitPack coordinates are planned, not available for consumers to rely on.
+- Publication is to be handled by the XtCrash maintainer only after end-to-end compatibility across XtCrash, XtMapper, and cage-xtmapper is validated.
+- Another contributor should not treat publication as a separate task or publish the release independently.
+- The gate requires API/coordinate fit, validation in XtMapper, validation of cage-xtmapper's Android-to-host reporting flow, an end-to-end test, and recorded commits/versions for all three projects.
+- Only after that gate should the maintainer create a tag/release, verify JitPack builds for intended artifacts, and test exact coordinates from a minimal external Gradle consumer.
+
+The issue lists the planned coordinates:
+`com.github.SoufianoDev.XtCrash:xtcrash:v1.0.0` and
+`com.github.SoufianoDev.XtCrash:xtcrash-compose:v1.0.0`.
+These are explicitly **unverified planned coordinates**, not dependencies to add yet.
+
+The related [PR #29](https://github.com/SoufianoDev/XtCrash/pull/29) is closed, draft, and unmerged. Its description says its JitPack preparation changes are deferred until Issue #26's integration gate passes. The issue discussion also records the decision to close that PR rather than leave publication-only work open.
+
+### Corrected interpretation and next boundary
+
+The unresolved point is no longer merely a choice between upstream and fork publication. Upstream has explicitly designated the maintainer as publisher and made publication conditional on the three-project integration gate. Therefore:
+
+- Do not create a tag/release, publish artifacts, change publication metadata, or open a replacement publication PR.
+- Do not add the planned coordinates to XtMapper as if they were consumable.
+- The Maven Local smoke test remains useful evidence about the fork's local build and API consumption only; it does not satisfy Issue #26 or prove the upstream release artifact.
+- Phase 2's remaining remote publication checks are intentionally deferred until the integration gate passes and the maintainer resumes release work.
+
+**Phase 2 status: local build/publication path verified; upstream release publication intentionally deferred by Issue #26.** Any further progress toward release readiness must now be made in the explicitly gated integration work, not by probing or preparing publication independently. This audit did not modify the upstream issue/PR or either integration repository.
