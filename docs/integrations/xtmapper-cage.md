@@ -503,3 +503,40 @@ Until that decision is made, do not rewrite group/artifact/version metadata, cre
 - Publishing source ownership (upstream vs fork): **UNRESOLVED**.
 
 **Phase 2 remains BLOCKED / NOT VERIFIED.** No publication metadata was changed, no tag/release was created, no artifact was uploaded, and XtMapper remains untouched.
+
+
+## Phase 14 — stop the invalid JitPack probe and restore meaningful CI (2026-11-01)
+
+### Latest workflow result
+
+Workflow run [41166141883](https://github.com/PanDuroDev/XtCrash/actions/runs/41166141883), for audit commit `763711c8032944b5d6da2b2389f99ced3fe2f236`, completed with five successful jobs and one failed JitPack probe. The JitPack job again requested the default fork-module coordinate:
+
+```
+com.github.PanDuroDev.XtCrash:library:763711c
+```
+
+The request to its POM URL timed out. This remains an invalid test for the project's configured custom publication and gives no new evidence about the declared `com.github.SoufianoDev:xtcrash:1.0.0` artifact.
+
+### Repository ownership and upstream state
+
+The upstream repository API currently identifies `SoufianoDev/XtCrash` as the canonical non-fork repository. Its master branch points to commit `656055f202b9f416b881bb6f710138f21bfe4875` (2026-10-28). The fork branch under audit is separate and contains audit-only commits. The connected GitHub permissions report read-only access to the upstream repository, so this audit must not attempt to publish or modify upstream.
+
+The publishing metadata still identifies SoufianoDev, while the tested source branch belongs to PanDuroDev. Ownership of a release remains a decision for the upstream owner; repository lineage alone does not authorize a release from either identity.
+
+### CI correction
+
+Removed the `jitpack-fork-consumer` job from `.github/workflows/verify-android.yml`. It repeatedly tested a default module coordinate that does not match the custom Maven publication configured by the project, causing a misleading red CI result. This removes an invalid probe, not a successful publication test.
+
+The remaining workflow continues to test:
+
+- Unit tests
+- Lint
+- Consumer module compilation and debug assembly
+- Release packaging with R8 enabled in the sample consumer
+- Maven Local publication, POM/AAR inspection, and compilation from a clean external Android consumer
+
+The JitPack gate is deliberately left **NOT VERIFIED** until the publishing repository/ref and exact JitPack coordinates can be tested consistently. No custom publication metadata was changed, no tag/release was created, no artifact was uploaded, and XtMapper was not modified.
+
+### Phase 2 status
+
+**PARTIALLY VERIFIED / BLOCKED.** Local Maven publication and independent consumer compilation pass. JitPack remote publication remains unverified. The next safe step is to obtain explicit confirmation from the upstream owner that the canonical source and intended release are `SoufianoDev/XtCrash`, then test that exact repository's custom publication using a clean remote consumer. Do not change the group, artifact, version, SCM metadata, or XtMapper dependency before that confirmation.
