@@ -35,7 +35,8 @@ android {
     }
     buildTypes {
         // Android library shrinking is performed by the consuming application.
-        // Keep this module unminified; verify R8 against the final app in the sample module.
+        // Keep this module unminified. The sample app depends only on :library,
+        // so consumer-side R8 coverage for this module's Compose code is missing.
     }
     buildFeatures {
         compose = true
