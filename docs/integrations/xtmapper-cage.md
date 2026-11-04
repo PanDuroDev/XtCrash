@@ -68,7 +68,7 @@ The change does not authorize background uploads or silently submit an issue. Th
 | Area | Evidence required | Current status |
 |---|---|---|
 | XtCrash API and core build | Compile against public API and build core artifact | **PASS** on fork commit `7023a85d8d420448a9350e3d92692b6e0d3e0401`: `:library:compileDebugKotlin`, `:xtcrash-compose:compileDebugKotlin`, `:library:assembleDebug`, `:xtcrash-compose:assembleDebug`, and `:xtcrash-sample:assembleDebug` succeeded in [CI run 40735898417](https://github.com/PanDuroDev/XtCrash/actions/runs/40735898417) |
-| Privacy confirmation | Handler cannot receive GitHub/GitLab URL before explicit confirmation | Policy/state unit tests and build/lint **PASS** in CI run 40735898417; no Android UI/device-level consent test yet |
+| Privacy confirmation | Handler cannot receive GitHub/GitLab URL before explicit confirmation | **PARTIAL** — policy/state unit tests and build/lint pass in CI run 40735898417; the dispatcher and Android UI confirmation path are not end-to-end tested |
 | XtMapper standalone build/JVM tests | `:app:testDebugUnitTest` + `:app:assembleDebug`, including NDK builds for four ABIs | **PASS** on exact PR head `b8f102a7ab1e6202c423c0c021b18053ac02495b` in [CI run 40717364818](https://github.com/SoufianoDev/XtMapper/actions/runs/40717364818); debug APK artifact uploaded |
 | XtMapper integration | Dependency, merged manifest, R8, startup/crash regression | Not integrated |
 | XtLogger boundary | Existing logging/session behavior preserved; no duplicate pipeline | Source design only |

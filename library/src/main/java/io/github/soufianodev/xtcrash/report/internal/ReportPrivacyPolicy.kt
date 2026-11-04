@@ -23,9 +23,11 @@ internal object ReportPrivacyPolicy {
     }
 
     /**
-     * Includes the transport warning only for plaintext HTTP and the prefill
-     * disclosure only when a non-empty title or description is actually in the
-     * prepared URL. The caller supplies localized strings from resources.
+     * Includes the transport warning only for plaintext HTTP, the prefill
+     * disclosure only when a non-empty title or description is actually in
+     * the prepared URL, and the handler disclosure last so the user sees the
+     * complete-report handoff after the destination and field details. The
+     * caller supplies localized strings from resources.
      */
     fun composeConfirmationSections(
         url: String,
@@ -35,6 +37,7 @@ internal object ReportPrivacyPolicy {
         prefillDisclosure: String,
         destination: String,
         fields: String,
+        handlerDisclosure: String? = null,
     ): String {
         val transportWarning = httpWarning.takeIf {
             IssueUrlBuilder.usesUnencryptedHttp(url)
@@ -48,6 +51,7 @@ internal object ReportPrivacyPolicy {
             disclosure,
             destination,
             fields,
+            handlerDisclosure,
         ).joinToString("\n\n")
     }
 }

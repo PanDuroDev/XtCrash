@@ -13,6 +13,7 @@ class ReportPrivacyPolicyTest {
         description: String? = null,
         prefillOmitsReport: Boolean = false,
         reportCopiedToClipboard: Boolean = false,
+        handlerDisclosure: String? = null,
     ): String {
         val manualPasteNote = ReportPrivacyPolicy.manualPasteNote(
             prefillOmitsReport = prefillOmitsReport,
@@ -28,6 +29,7 @@ class ReportPrivacyPolicyTest {
             prefillDisclosure = "PREFILL_MAY_BE_SENT_BEFORE_SUBMIT",
             destination = "DESTINATION_URL",
             fields = "DECODED_TITLE_AND_DESCRIPTION",
+            handlerDisclosure = handlerDisclosure,
         )
         return IssueUrlPrivacyConfirmationComposer.compose(manualPasteNote, sections)
     }
@@ -106,5 +108,33 @@ class ReportPrivacyPolicyTest {
 
         assertFalse(message.contains("REPORT_COPIED_TO_CLIPBOARD_PASTE_BEFORE_SUBMIT"))
         assertFalse(message.contains("REPORT_NOT_COPIED_PASTE_MANUALLY"))
+    }
+
+    @Test
+    fun handlerDisclosureIsShownAfterTheDestinationAndFieldDetails() {
+        val message = confirmation(
+            url = "https://gitlab.example.com/group/project/-/issues/new?issue%5Btitle%5D=Crash",
+            title = "Crash",
+            handlerDisclosure = "HANDLER_RECEIVES_FULL_REPORT",
+        )
+
+        assertTrue(message.contains("HANDLER_RECEIVES_FULL_REPORT"))
+        assertTrue(
+            message.indexOf("DESTINATION_URL") <
+                message.indexOf("HANDLER_RECEIVES_FULL_REPORT"),
+        )
+        assertTrue(
+            message.indexOf("DECODED_TITLE_AND_DESCRIPTION") <
+                message.indexOf("HANDLER_RECEIVES_FULL_REPORT"),
+        )
+    }
+
+    @Test
+    fun handlerDisclosureIsAbsentWhenNoGatedHandlerIsConfigured() {
+        val message = confirmation(
+            url = "https://gitlab.example.com/group/project/-/issues/new",
+        )
+
+        assertFalse(message.contains("HANDLER_RECEIVES_FULL_REPORT"))
     }
 }

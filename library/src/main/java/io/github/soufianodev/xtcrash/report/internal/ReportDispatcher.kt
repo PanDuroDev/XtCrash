@@ -663,6 +663,18 @@ class ReportDispatcher(
             ),
             destination = destinationDetails,
             fields = fieldDetails,
+            handlerDisclosure = if (config.reportActionHandlerClass != null &&
+                ReportHandlerConsentPolicy.requiresConsentBeforeHandler(
+                    destination,
+                    handlerConfigured = true,
+                )
+            ) {
+                // The handler receives the unshortened report; the user must
+                // see that before confirming, in both the XML and Compose UIs.
+                context.getString(R.string.crash_report_url_privacy_handler)
+            } else {
+                null
+            },
         )
         val manualPasteNote = ReportPrivacyPolicy.manualPasteNote(
             prefillOmitsReport = prepared.prefillOmitsReport,
