@@ -38,6 +38,7 @@
     <string name="xtcrash_report_url_cancel">Cancel</string>
     <string name="xtcrash_report_manual_paste">The report was copied to the clipboard. Paste it into the issue form before submitting.</string>
     <string name="xtcrash_report_manual_paste_not_copied">The report is too long to prefill and could not be copied. Please copy it from the error details screen and paste it into the issue form.</string>
+    <string name="xtcrash_report_manual_paste_pending">The issue form does not contain the full report. If you select Continue, XtCrash will try to copy the full report to the device clipboard. If copying succeeds, paste the report into the issue form before submitting. Otherwise, copy it from the error details screen.</string>
     <string name="xtcrash_report_paste_instruction">Copy the report, then paste it before submitting.</string>
     <string name="xtcrash_report_no_browser">No app was found to open the issue page.</string>
     <string name="xtcrash_report_accepted">Report request queued.</string>

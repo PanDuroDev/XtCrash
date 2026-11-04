@@ -181,6 +181,10 @@ class ReportDispatcher(
     fun confirmWebUrl() {
         val requestId = currentRequestId ?: return
         val prepared = ownership.consumeConfirmation(requestId) ?: return
+        // Copy only after the user confirms the privacy disclosure.
+        if (prepared.prefillOmitsReport && !prepared.reportCopiedToClipboard) {
+            prepared.reportCopiedToClipboard = copyToClipboard(canonicalReport)
+        }
         openUrl(requestId, prepared)
     }
 
@@ -490,9 +494,9 @@ class ReportDispatcher(
     }
 
     /**
-     * Web destinations: prepare the URL, copy the full report when the prefill
-     * had to be shortened, then wait for the privacy confirmation that must
-     * appear before any report-bearing URL is opened.
+     * Web destinations: stage the privacy confirmation for a prepared web URL
+     * without writing to the clipboard. Confirmation must precede copying and
+     * opening any report-bearing URL.
      */
     private fun performWebAction(requestId: String, prepared: PreparedReport) {
         val url = prepared.url
@@ -504,12 +508,6 @@ class ReportDispatcher(
                 prepared = prepared,
             ))
             return
-        }
-
-        if (prepared.prefillOmitsReport) {
-            // The shortened prefill cannot claim to hold the whole report, so
-            // offer the complete canonical text on the clipboard.
-            prepared.reportCopiedToClipboard = copyToClipboard(canonicalReport)
         }
 
         emit(requestId, ReportState(
@@ -609,12 +607,9 @@ class ReportDispatcher(
             details,
         )
         if (prepared.prefillOmitsReport) {
-            val note = if (prepared.reportCopiedToClipboard) {
-                context.getString(R.string.xtcrash_report_manual_paste)
-            } else {
-                context.getString(R.string.xtcrash_report_manual_paste_not_copied)
-            }
-            message += "\n\n" + note
+            // Copy happens only after confirmation, so the dialog must not
+            // claim a paste-ready clipboard state.
+            message += "\n\n" + context.getString(R.string.xtcrash_report_manual_paste_pending)
         }
         return message
     }
