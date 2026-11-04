@@ -85,7 +85,7 @@ jobs:
       - name: Run lint without build cache
         run: |
           gradle --no-daemon --no-build-cache --rerun-tasks --stacktrace \
-            :library:lintDebug
+            :library:lintDebug -Plint.abortOnError=true
 
   consumer-assembly:
     name: Isolated consumer assembly

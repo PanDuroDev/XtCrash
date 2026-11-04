@@ -58,7 +58,10 @@ android {
         targetCompatibility JavaVersion.VERSION_11
     }
     lint {
-        abortOnError false
+        // CI lint gate only; local and consumer builds keep the non-aborting default.
+        abortOnError providers.gradleProperty('lint.abortOnError').orElse('false').get().toBoolean()
+        // 50 legacy findings (pre-project resource names and the like) are recorded; new errors fail CI.
+        baseline file('lint-baseline.xml')
     }
 }
 
