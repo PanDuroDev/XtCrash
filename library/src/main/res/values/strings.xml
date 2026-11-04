@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="crash_error_activity_error_occurred_explanation">An unexpected error occurred. Sorry for the inconvenience.</string>
-    <string name="crash_error_activity_restart_app">Restart app</string>
-    <string name="crash_error_activity_close_app">Close app</string>
-    <string name="crash_error_activity_error_details">Error details</string>
-    <string name="crash_error_activity_error_details_title">Error details</string>
-    <string name="crash_error_activity_error_details_close">Close</string>
-    <string name="crash_error_activity_error_details_copy">Copy</string>
-    <string name="crash_error_activity_error_details_copied">Copied to clipboard</string>
-    <string name="crash_error_activity_error_details_clipboard_label">XtCrash error information</string>
+    <!-- Legacy-compatible string names kept intentionally for existing users. -->
+    <string name="customactivityoncrash_error_activity_error_occurred_explanation" tools:ignore="ResourceName">An unexpected error occurred. Sorry for the inconvenience.</string>
+    <string name="customactivityoncrash_error_activity_restart_app" tools:ignore="ResourceName">Restart app</string>
+    <string name="customactivityoncrash_error_activity_close_app" tools:ignore="ResourceName">Close app</string>
+    <string name="customactivityoncrash_error_activity_error_details" tools:ignore="ResourceName">Error details</string>
+    <string name="customactivityoncrash_error_activity_error_details_title" tools:ignore="ResourceName">Error details</string>
+    <string name="customactivityoncrash_error_activity_error_details_close" tools:ignore="ResourceName">Close</string>
+    <string name="customactivityoncrash_error_activity_error_details_copy" tools:ignore="ResourceName">Copy</string>
+    <string name="customactivityoncrash_error_activity_error_details_copied" tools:ignore="ResourceName">Copied to clipboard</string>
+    <string name="customactivityoncrash_error_activity_error_details_clipboard_label" tools:ignore="ResourceName">XtCrash error information</string>
 
     <!-- XtCrash strings. -->
     <string name="crash_send_report">Send crash report</string>

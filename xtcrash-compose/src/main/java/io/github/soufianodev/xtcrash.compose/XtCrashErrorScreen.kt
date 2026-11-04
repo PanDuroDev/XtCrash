@@ -192,7 +192,7 @@ fun XtCrashErrorScreen(
                     if (config.isShowRestartButton && config.restartActivityClass != null) {
                         ActionButton(
                                 text = config.restartButtonText
-                                        ?: stringResource(R.string.crash_error_activity_restart_app),
+                                        ?: stringResource(R.string.customactivityoncrash_error_activity_restart_app),
                                 containerColor = toComposeColor(config.primaryButtonColor),
                                 contentColor = toComposeColor(config.buttonTextColor),
                                 modifier = Modifier.padding(top = 26.dp),
@@ -213,7 +213,7 @@ fun XtCrashErrorScreen(
                     if (config.isShowErrorDetails) {
                         ActionButton(
                                 text = config.detailsButtonText
-                                        ?: stringResource(R.string.crash_error_activity_error_details),
+                                        ?: stringResource(R.string.customactivityoncrash_error_activity_error_details),
                                 containerColor = toComposeColor(config.secondaryButtonColor),
                                 contentColor = toComposeColor(config.secondaryButtonTextColor),
                                 modifier = Modifier.padding(top = 10.dp),
@@ -224,7 +224,7 @@ fun XtCrashErrorScreen(
                     if (config.isShowCloseButton) {
                         ActionButton(
                                 text = config.closeButtonText
-                                        ?: stringResource(R.string.crash_error_activity_close_app),
+                                        ?: stringResource(R.string.customactivityoncrash_error_activity_close_app),
                                 containerColor = toComposeColor(config.secondaryButtonColor),
                                 contentColor = toComposeColor(config.secondaryButtonTextColor),
                                 modifier = Modifier.padding(top = 10.dp),
@@ -331,7 +331,7 @@ private fun ErrorDetailsDialog(config: CrashConfig, errorDetails: String, onDism
     val context = LocalContext.current
     AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text(stringResource(R.string.crash_error_activity_error_details_title)) },
+            title = { Text(stringResource(R.string.customactivityoncrash_error_activity_error_details_title)) },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = 320.dp)) {
                     Text(
@@ -344,7 +344,7 @@ private fun ErrorDetailsDialog(config: CrashConfig, errorDetails: String, onDism
             },
             confirmButton = {
                 TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.crash_error_activity_error_details_close))
+                    Text(stringResource(R.string.customactivityoncrash_error_activity_error_details_close))
                 }
             },
             dismissButton = {
@@ -352,7 +352,7 @@ private fun ErrorDetailsDialog(config: CrashConfig, errorDetails: String, onDism
                     TextButton(onClick = { context.copyErrorToClipboard(errorDetails) }) {
                         Text(
                                 config.copyButtonText
-                                        ?: stringResource(R.string.crash_error_activity_error_details_copy),
+                                        ?: stringResource(R.string.customactivityoncrash_error_activity_error_details_copy),
                         )
                     }
                 }
@@ -420,7 +420,7 @@ private fun ExplicitFallbackDialog(
 
     AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text(stringResource(R.string.crash_error_activity_error_details_title)) },
+            title = { Text(stringResource(R.string.customactivityoncrash_error_activity_error_details_title)) },
             text = { Text(message) },
             confirmButton = {
                 if (hasWebUrl) {
@@ -429,7 +429,7 @@ private fun ExplicitFallbackDialog(
                     }
                 } else {
                     TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.crash_error_activity_error_details_close))
+                        Text(stringResource(R.string.customactivityoncrash_error_activity_error_details_close))
                     }
                 }
             },
@@ -451,11 +451,11 @@ private fun Context.copyErrorToClipboard(errorDetails: String) {
 
     clipboard.setPrimaryClip(
             ClipData.newPlainText(
-                    getString(R.string.crash_error_activity_error_details_clipboard_label),
+                    getString(R.string.customactivityoncrash_error_activity_error_details_clipboard_label),
                     errorDetails,
             )
     )
-    Toast.makeText(this, R.string.crash_error_activity_error_details_copied, Toast.LENGTH_SHORT).show()
+    Toast.makeText(this, R.string.customactivityoncrash_error_activity_error_details_copied, Toast.LENGTH_SHORT).show()
 }
 
 private fun toComposeColor(value: Int): Color = Color(value.toLong() and 0xFFFFFFFFL)

@@ -221,7 +221,7 @@ class DefaultErrorActivity : AppCompatActivity() {
         if (config.isShowRestartButton && config.restartActivityClass != null) {
             restartButton.visibility = View.VISIBLE
             restartButton.text = config.restartButtonText
-                    ?: getString(R.string.crash_error_activity_restart_app)
+                    ?: getString(R.string.customactivityoncrash_error_activity_restart_app)
             restartButton.setOnClickListener { CrashActivity.restartApplication(this@DefaultErrorActivity, config) }
         } else {
             restartButton.visibility = View.GONE
@@ -238,7 +238,7 @@ class DefaultErrorActivity : AppCompatActivity() {
         if (config.isShowCloseButton) {
             closeButton.visibility = View.VISIBLE
             closeButton.text = config.closeButtonText
-                    ?: getString(R.string.crash_error_activity_close_app)
+                    ?: getString(R.string.customactivityoncrash_error_activity_close_app)
             closeButton.setOnClickListener { CrashActivity.closeApplication(this@DefaultErrorActivity, config) }
         } else {
             closeButton.visibility = View.GONE
@@ -255,7 +255,7 @@ class DefaultErrorActivity : AppCompatActivity() {
         if (config.isShowErrorDetails) {
             detailsButton.visibility = View.VISIBLE
             detailsButton.text = config.detailsButtonText
-                    ?: getString(R.string.crash_error_activity_error_details)
+                    ?: getString(R.string.customactivityoncrash_error_activity_error_details)
             detailsButton.setOnClickListener { showErrorDetailsDialog() }
         } else {
             detailsButton.visibility = View.GONE
@@ -354,7 +354,7 @@ class DefaultErrorActivity : AppCompatActivity() {
         val prepared = state.prepared
         val destination = prepared?.destination ?: config.reportDestination
         val builder = AlertDialog.Builder(this)
-                .setTitle(R.string.crash_error_activity_error_details_title)
+                .setTitle(R.string.customactivityoncrash_error_activity_error_details_title)
                 .setMessage(state.message ?: "")
 
         val hasWebUrl = (destination == io.github.soufianodev.xtcrash.report.ReportDestination.GITHUB
@@ -374,7 +374,7 @@ class DefaultErrorActivity : AppCompatActivity() {
                 creatingDispatcher.copyReportForFallback()
             }
         }
-        builder.setNegativeButton(R.string.crash_error_activity_error_details_close, null)
+        builder.setNegativeButton(R.string.customactivityoncrash_error_activity_error_details_close, null)
 
         reportDialog?.dismiss()
         reportDialogState = state
@@ -395,13 +395,13 @@ class DefaultErrorActivity : AppCompatActivity() {
         val errorInformation = reportSnapshot?.text
                 ?: CrashActivity.getAllErrorDetailsFromIntent(this@DefaultErrorActivity, intent)
         val builder = AlertDialog.Builder(this@DefaultErrorActivity)
-                .setTitle(R.string.crash_error_activity_error_details_title)
+                .setTitle(R.string.customactivityoncrash_error_activity_error_details_title)
                 .setMessage(errorInformation)
-                .setPositiveButton(R.string.crash_error_activity_error_details_close, null)
+                .setPositiveButton(R.string.customactivityoncrash_error_activity_error_details_close, null)
 
         if (config.isShowCopyButtonInDetails) {
             val copyText = config.copyButtonText
-                    ?: getString(R.string.crash_error_activity_error_details_copy)
+                    ?: getString(R.string.customactivityoncrash_error_activity_error_details_copy)
             builder.setNeutralButton(copyText) { _, _ -> copyErrorToClipboard(errorInformation) }
         }
 
@@ -411,7 +411,7 @@ class DefaultErrorActivity : AppCompatActivity() {
         if (textView != null) {
             textView.setTextSize(
                     TypedValue.COMPLEX_UNIT_PX,
-                    resources.getDimension(R.dimen.crash_error_activity_error_details_text_size)
+                    resources.getDimension(R.dimen.customactivityoncrash_error_activity_error_details_text_size)
             )
         }
     }
@@ -421,13 +421,13 @@ class DefaultErrorActivity : AppCompatActivity() {
 
         if (clipboard != null) {
             val clip = ClipData.newPlainText(
-                    getString(R.string.crash_error_activity_error_details_clipboard_label),
+                    getString(R.string.customactivityoncrash_error_activity_error_details_clipboard_label),
                     errorInformation
             )
             clipboard.setPrimaryClip(clip)
             Toast.makeText(
                     this@DefaultErrorActivity,
-                    R.string.crash_error_activity_error_details_copied,
+                    R.string.customactivityoncrash_error_activity_error_details_copied,
                     Toast.LENGTH_SHORT
             ).show()
         } else {
