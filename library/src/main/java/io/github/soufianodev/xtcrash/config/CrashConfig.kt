@@ -844,7 +844,7 @@ class CrashConfig : Serializable {
         /**
          * Sets the optional report-action handler class. The class must be
          * public with a public no-argument constructor so it can be constructed
-         * in the `:xtcrash_error` process. Clearing it is independent of the
+         * in the `:crash_error` process. Clearing it is independent of the
          * destination and custom sender.
          */
         fun reportActionHandler(handlerClass: Class<out ReportActionHandler>?): Builder {

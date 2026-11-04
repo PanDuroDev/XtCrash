@@ -132,7 +132,7 @@ class CrashConfigReportRoutingTest {
         assertNull(config.githubRepository)
     }
 
-    /** Public class but no public no-arg constructor: cannot be built reflectively in `:xtcrash_error`. */
+    /** Public class but no public no-arg constructor: cannot be built reflectively in `:crash_error`. */
     class PrivateCtorHandler private constructor() : ReportActionHandler {
         override fun onReport(report: PreparedReport): ReportOutcome = ReportOutcome.NOT_HANDLED
     }

@@ -11,7 +11,7 @@ import io.github.soufianodev.xtcrash.log.CrashLogListener
  * Demo sink for the on-device cross-process check. Prints every forwarded
  * event with the delivering process's PID under its own tag, so logcat makes
  * it obvious which process produced each line: the main process or
- * `:xtcrash_error`.
+ * `:crash_error`.
  *
  * Configured in MainActivity's default testing config alongside
  * `loggingEnabled(true)`, so both sinks of the logging feature show up at

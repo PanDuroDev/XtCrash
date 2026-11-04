@@ -420,9 +420,9 @@ object CrashActivity {
             return explicit
         }
         return if (config.isIncludeCrashId) {
-            context.getString(R.string.xtcrash_default_report_subject, context.packageName, crashId)
+            context.getString(R.string.crash_default_report_subject, context.packageName, crashId)
         } else {
-            context.getString(R.string.xtcrash_default_report_subject_no_id, context.packageName)
+            context.getString(R.string.crash_default_report_subject_no_id, context.packageName)
         }
     }
 

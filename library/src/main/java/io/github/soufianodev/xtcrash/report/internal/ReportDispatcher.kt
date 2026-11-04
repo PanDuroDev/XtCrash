@@ -284,7 +284,7 @@ class ReportDispatcher(
                 if (owner.isNullOrEmpty() || repo.isNullOrEmpty()
                         || !IssueUrlBuilder.isSafePathComponent(owner)
                         || !IssueUrlBuilder.isSafePathComponent(repo)) {
-                    context.getString(R.string.xtcrash_report_config_invalid)
+                    context.getString(R.string.crash_report_config_invalid)
                 } else {
                     null
                 }
@@ -293,9 +293,9 @@ class ReportDispatcher(
                 val path = config.gitLabProjectPath
                 val baseUrl = config.gitLabBaseUrl
                 if (path.isNullOrEmpty() || baseUrl.isNullOrEmpty()) {
-                    context.getString(R.string.xtcrash_report_config_invalid)
+                    context.getString(R.string.crash_report_config_invalid)
                 } else if (!IssueUrlBuilder.isSupportedBaseUrl(baseUrl)) {
-                    context.getString(R.string.xtcrash_report_config_invalid)
+                    context.getString(R.string.crash_report_config_invalid)
                 } else {
                     null
                 }
@@ -446,7 +446,7 @@ class ReportDispatcher(
     ) {
         when (outcome) {
             ReportOutcome.ACCEPTED -> {
-                emit(requestId, ReportState(Phase.ACCEPTED, message = context.getString(R.string.xtcrash_report_accepted), prepared = prepared))
+                emit(requestId, ReportState(Phase.ACCEPTED, message = context.getString(R.string.crash_report_accepted), prepared = prepared))
             }
             ReportOutcome.NOT_HANDLED -> {
                 performDestinationAction(requestId, prepared, webConfirmed)
@@ -454,7 +454,7 @@ class ReportDispatcher(
             ReportOutcome.FAILED -> {
                 emit(requestId, ReportState(
                     Phase.FALLBACK_AVAILABLE,
-                    message = fallbackMessage(context.getString(R.string.xtcrash_report_failed), prepared),
+                    message = fallbackMessage(context.getString(R.string.crash_report_failed), prepared),
                     fallbackAvailable = true,
                     prepared = prepared,
                 ))
@@ -462,7 +462,7 @@ class ReportDispatcher(
             ReportOutcome.UNKNOWN -> {
                 emit(requestId, ReportState(
                     Phase.UNKNOWN,
-                    message = fallbackMessage(context.getString(R.string.xtcrash_report_unknown), prepared),
+                    message = fallbackMessage(context.getString(R.string.crash_report_unknown), prepared),
                     fallbackAvailable = true,
                     prepared = prepared,
                 ))
@@ -506,9 +506,9 @@ class ReportDispatcher(
             emit(requestId, ReportState(
                 Phase.FALLBACK_AVAILABLE,
                 message = if (prepared.reportCopiedToClipboard) {
-                    context.getString(R.string.xtcrash_no_share_app_found)
+                    context.getString(R.string.crash_no_share_app_found)
                 } else {
-                    context.getString(R.string.xtcrash_report_not_copied)
+                    context.getString(R.string.crash_report_not_copied)
                 },
                 fallbackAvailable = true,
                 prepared = prepared,
@@ -536,7 +536,7 @@ class ReportDispatcher(
             emit(requestId, ReportState(Phase.HANDOFF_ATTEMPTED, prepared = prepared))
         } catch (e: ActivityNotFoundException) {
             prepared.reportCopiedToClipboard = copyToClipboard(canonicalReport)
-            val status = context.getString(R.string.xtcrash_report_no_email_client)
+            val status = context.getString(R.string.crash_report_no_email_client)
             emit(requestId, ReportState(
                 Phase.FALLBACK_AVAILABLE,
                 message = fallbackMessage(status, prepared),
@@ -557,7 +557,7 @@ class ReportDispatcher(
             handlerConfirmation.clearIf(requestId)
             emit(requestId, ReportState(
                 Phase.CONFIG_INVALID,
-                message = context.getString(R.string.xtcrash_report_config_invalid),
+                message = context.getString(R.string.crash_report_config_invalid),
                 fallbackAvailable = true,
                 prepared = prepared,
             ))
@@ -590,9 +590,9 @@ class ReportDispatcher(
             prepared.reportCopiedToClipboard = copied
         }
         val status = if (copied) {
-            context.getString(R.string.xtcrash_report_copied)
+            context.getString(R.string.crash_report_copied)
         } else {
-            context.getString(R.string.xtcrash_report_not_copied)
+            context.getString(R.string.crash_report_not_copied)
         }
         // Validation failures leave currentPrepared null, but the instruction
         // must still reflect this copy and the configured destination —
@@ -616,49 +616,49 @@ class ReportDispatcher(
      */
     private fun privacyDialogMessage(prepared: PreparedReport): String {
         val url = prepared.url
-            ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url)
+            ?: return context.getString(R.string.crash_report_url_privacy_invalid_url)
         val destination = prepared.destination
-            ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url)
+            ?: return context.getString(R.string.crash_report_url_privacy_invalid_url)
         val preview = IssueUrlPrivacyPreviewBuilder.build(url, destination)
-            ?: return context.getString(R.string.xtcrash_report_url_privacy_invalid_url)
+            ?: return context.getString(R.string.crash_report_url_privacy_invalid_url)
 
         val isGitHub = destination == ReportDestination.GITHUB
         val destinationLabel = context.getString(
-            if (isGitHub) R.string.xtcrash_report_destination_github
-            else R.string.xtcrash_report_destination_gitlab,
+            if (isGitHub) R.string.crash_report_destination_github
+            else R.string.crash_report_destination_gitlab,
         )
         val fields = mutableListOf<String>()
         preview.title?.let {
-            fields += context.getString(R.string.xtcrash_report_url_privacy_title_field, it)
+            fields += context.getString(R.string.crash_report_url_privacy_title_field, it)
         }
         preview.description?.let {
-            fields += context.getString(R.string.xtcrash_report_url_privacy_description_field, it)
+            fields += context.getString(R.string.crash_report_url_privacy_description_field, it)
         }
         val fieldDetails = if (fields.isEmpty()) {
-            context.getString(R.string.xtcrash_report_url_privacy_no_prefill)
+            context.getString(R.string.crash_report_url_privacy_no_prefill)
         } else {
             context.getString(
-                R.string.xtcrash_report_url_privacy_fields_present,
+                R.string.crash_report_url_privacy_fields_present,
                 fields.joinToString("\n"),
             )
         }
 
         val uri = Uri.parse(url)
         val host = buildString {
-            append(uri.host ?: context.getString(R.string.xtcrash_report_url_privacy_unknown_host))
+            append(uri.host ?: context.getString(R.string.crash_report_url_privacy_unknown_host))
             if (uri.port != -1) append(":").append(uri.port)
         }
         val destinationDetails = context.getString(
-            R.string.xtcrash_report_url_destination_format,
+            R.string.crash_report_url_destination_format,
             preview.destinationUrl,
         )
         val detailsMessage = ReportPrivacyPolicy.composeConfirmationSections(
             url = url,
             title = preview.title,
             description = preview.description,
-            httpWarning = context.getString(R.string.xtcrash_report_http_warning, host),
+            httpWarning = context.getString(R.string.crash_report_http_warning, host),
             prefillDisclosure = context.getString(
-                R.string.xtcrash_report_url_prefill_disclosure,
+                R.string.crash_report_url_prefill_disclosure,
                 destinationLabel,
             ),
             destination = destinationDetails,
@@ -667,14 +667,14 @@ class ReportDispatcher(
         val manualPasteNote = ReportPrivacyPolicy.manualPasteNote(
             prefillOmitsReport = prepared.prefillOmitsReport,
             reportCopiedToClipboard = prepared.reportCopiedToClipboard,
-            manualPasteNote = context.getString(R.string.xtcrash_report_manual_paste),
-            manualPasteNotCopiedNote = context.getString(R.string.xtcrash_report_manual_paste_pending),
+            manualPasteNote = context.getString(R.string.crash_report_manual_paste),
+            manualPasteNotCopiedNote = context.getString(R.string.crash_report_manual_paste_pending),
         )
 
         // Keep the legacy resource so apps that customize it retain localization.
         // If a customized resource omits %2$s, still show the privacy details.
         val formattedMessage = context.getString(
-            R.string.xtcrash_report_url_privacy_message,
+            R.string.crash_report_url_privacy_message,
             destinationLabel,
             detailsMessage,
         )
@@ -699,9 +699,9 @@ class ReportDispatcher(
 
     private fun pasteInstruction(copied: Boolean, destination: ReportDestination?): String =
         when (PasteInstruction.select(copied, destination)) {
-            PasteInstruction.Kind.COPY_THEN_PASTE -> context.getString(R.string.xtcrash_report_paste_instruction)
-            PasteInstruction.Kind.EMAIL_COPIED -> context.getString(R.string.xtcrash_report_email_copied)
-            PasteInstruction.Kind.ISSUE_FORM -> context.getString(R.string.xtcrash_report_manual_paste)
+            PasteInstruction.Kind.COPY_THEN_PASTE -> context.getString(R.string.crash_report_paste_instruction)
+            PasteInstruction.Kind.EMAIL_COPIED -> context.getString(R.string.crash_report_email_copied)
+            PasteInstruction.Kind.ISSUE_FORM -> context.getString(R.string.crash_report_manual_paste)
         }
 
     /** Opens the confirmed web URL. Only reachable via [confirmWebUrl]. */
@@ -710,7 +710,7 @@ class ReportDispatcher(
         if (url == null) {
             emit(requestId, ReportState(
                 Phase.CONFIG_INVALID,
-                message = context.getString(R.string.xtcrash_report_config_invalid),
+                message = context.getString(R.string.crash_report_config_invalid),
                 fallbackAvailable = true,
                 prepared = prepared,
             ))
@@ -722,7 +722,7 @@ class ReportDispatcher(
         } catch (e: ActivityNotFoundException) {
             emit(requestId, ReportState(
                 Phase.FALLBACK_AVAILABLE,
-                message = fallbackMessage(context.getString(R.string.xtcrash_report_no_browser), prepared),
+                message = fallbackMessage(context.getString(R.string.crash_report_no_browser), prepared),
                 fallbackAvailable = true,
                 prepared = prepared,
             ))
@@ -736,7 +736,7 @@ class ReportDispatcher(
             // fallback cannot act on a report the sender never took.
             emit(requestId, ReportState(
                 Phase.CONFIG_INVALID,
-                message = context.getString(R.string.xtcrash_report_config_invalid),
+                message = context.getString(R.string.crash_report_config_invalid),
                 fallbackAvailable = true,
                 prepared = prepared,
             ))

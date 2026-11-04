@@ -81,7 +81,7 @@
                     android:layout_height="50dp"
                     android:layout_marginTop="26dp"
                     android:background="#D50000"
-                    android:text="@string/customactivityoncrash_error_activity_restart_app"
+                    android:text="@string/crash_error_activity_restart_app"
                     android:textAllCaps="false"
                     android:textColor="@android:color/white"
                     android:textStyle="bold" />
@@ -92,7 +92,7 @@
                     android:layout_height="50dp"
                     android:layout_marginTop="10dp"
                     android:background="#D50000"
-                    android:text="@string/xtcrash_send_crash_report"
+                    android:text="@string/crash_send_report"
                     android:textAllCaps="false"
                     android:textColor="@android:color/white"
                     android:textStyle="bold"
@@ -104,7 +104,7 @@
                     android:layout_height="50dp"
                     android:layout_marginTop="10dp"
                     android:background="#F3F4F6"
-                    android:text="@string/customactivityoncrash_error_activity_error_details"
+                    android:text="@string/crash_error_activity_error_details"
                     android:textAllCaps="false"
                     android:textColor="#111827"
                     android:textStyle="bold" />
@@ -115,7 +115,7 @@
                     android:layout_height="50dp"
                     android:layout_marginTop="10dp"
                     android:background="#F3F4F6"
-                    android:text="@string/customactivityoncrash_error_activity_close_app"
+                    android:text="@string/crash_error_activity_close_app"
                     android:textAllCaps="false"
                     android:textColor="#111827"
                     android:textStyle="bold" />

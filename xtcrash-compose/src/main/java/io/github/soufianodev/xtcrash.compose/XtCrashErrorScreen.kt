@@ -181,7 +181,7 @@ fun XtCrashErrorScreen(
 
                     if (config.isShowCrashId) {
                         Text(
-                                text = stringResource(R.string.xtcrash_crash_id_format, crashId),
+                                text = stringResource(R.string.crash_id_format, crashId),
                                 textAlign = TextAlign.Center,
                                 color = toComposeColor(config.metaTextColor),
                                 fontSize = 12.sp,
@@ -192,7 +192,7 @@ fun XtCrashErrorScreen(
                     if (config.isShowRestartButton && config.restartActivityClass != null) {
                         ActionButton(
                                 text = config.restartButtonText
-                                        ?: stringResource(R.string.customactivityoncrash_error_activity_restart_app),
+                                        ?: stringResource(R.string.crash_error_activity_restart_app),
                                 containerColor = toComposeColor(config.primaryButtonColor),
                                 contentColor = toComposeColor(config.buttonTextColor),
                                 modifier = Modifier.padding(top = 26.dp),
@@ -213,7 +213,7 @@ fun XtCrashErrorScreen(
                     if (config.isShowErrorDetails) {
                         ActionButton(
                                 text = config.detailsButtonText
-                                        ?: stringResource(R.string.customactivityoncrash_error_activity_error_details),
+                                        ?: stringResource(R.string.crash_error_activity_error_details),
                                 containerColor = toComposeColor(config.secondaryButtonColor),
                                 contentColor = toComposeColor(config.secondaryButtonTextColor),
                                 modifier = Modifier.padding(top = 10.dp),
@@ -224,7 +224,7 @@ fun XtCrashErrorScreen(
                     if (config.isShowCloseButton) {
                         ActionButton(
                                 text = config.closeButtonText
-                                        ?: stringResource(R.string.customactivityoncrash_error_activity_close_app),
+                                        ?: stringResource(R.string.crash_error_activity_close_app),
                                 containerColor = toComposeColor(config.secondaryButtonColor),
                                 contentColor = toComposeColor(config.secondaryButtonTextColor),
                                 modifier = Modifier.padding(top = 10.dp),
@@ -234,7 +234,7 @@ fun XtCrashErrorScreen(
 
                     if (config.isShowAppInfo) {
                         Text(
-                                text = stringResource(R.string.xtcrash_version_format, CrashActivity.VERSION),
+                                text = stringResource(R.string.crash_version_format, CrashActivity.VERSION),
                                 textAlign = TextAlign.Center,
                                 color = toComposeColor(config.metaTextColor),
                                 fontSize = 12.sp,
@@ -331,7 +331,7 @@ private fun ErrorDetailsDialog(config: CrashConfig, errorDetails: String, onDism
     val context = LocalContext.current
     AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text(stringResource(R.string.customactivityoncrash_error_activity_error_details_title)) },
+            title = { Text(stringResource(R.string.crash_error_activity_error_details_title)) },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = 320.dp)) {
                     Text(
@@ -344,7 +344,7 @@ private fun ErrorDetailsDialog(config: CrashConfig, errorDetails: String, onDism
             },
             confirmButton = {
                 TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.customactivityoncrash_error_activity_error_details_close))
+                    Text(stringResource(R.string.crash_error_activity_error_details_close))
                 }
             },
             dismissButton = {
@@ -352,7 +352,7 @@ private fun ErrorDetailsDialog(config: CrashConfig, errorDetails: String, onDism
                     TextButton(onClick = { context.copyErrorToClipboard(errorDetails) }) {
                         Text(
                                 config.copyButtonText
-                                        ?: stringResource(R.string.customactivityoncrash_error_activity_error_details_copy),
+                                        ?: stringResource(R.string.crash_error_activity_error_details_copy),
                         )
                     }
                 }
@@ -377,7 +377,7 @@ private fun PrivacyConfirmDialog(
     AlertDialog(
             onDismissRequest = onDismiss,
             title = {
-                Text(stringResource(R.string.xtcrash_report_url_privacy_title, destinationLabel))
+                Text(stringResource(R.string.crash_report_url_privacy_title, destinationLabel))
             },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = 320.dp)) {
@@ -386,12 +386,12 @@ private fun PrivacyConfirmDialog(
             },
             confirmButton = {
                 TextButton(onClick = onConfirm) {
-                    Text(stringResource(R.string.xtcrash_report_url_continue))
+                    Text(stringResource(R.string.crash_report_url_continue))
                 }
             },
             dismissButton = {
                 TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.xtcrash_report_url_cancel))
+                    Text(stringResource(R.string.crash_report_url_cancel))
                 }
             },
     )
@@ -420,22 +420,22 @@ private fun ExplicitFallbackDialog(
 
     AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text(stringResource(R.string.customactivityoncrash_error_activity_error_details_title)) },
+            title = { Text(stringResource(R.string.crash_error_activity_error_details_title)) },
             text = { Text(message) },
             confirmButton = {
                 if (hasWebUrl) {
                     TextButton(onClick = onOpenIssue) {
-                        Text(stringResource(R.string.xtcrash_report_open_issue))
+                        Text(stringResource(R.string.crash_report_open_issue))
                     }
                 } else {
                     TextButton(onClick = onDismiss) {
-                        Text(stringResource(R.string.customactivityoncrash_error_activity_error_details_close))
+                        Text(stringResource(R.string.crash_error_activity_error_details_close))
                     }
                 }
             },
             dismissButton = {
                 TextButton(onClick = onCopy) {
-                    Text(stringResource(R.string.xtcrash_report_copy))
+                    Text(stringResource(R.string.crash_report_copy))
                 }
             },
     )
@@ -445,17 +445,17 @@ private fun Context.copyErrorToClipboard(errorDetails: String) {
     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
     if (clipboard == null) {
         // Only report success after the clipboard operation actually succeeds.
-        Toast.makeText(this, R.string.xtcrash_report_not_copied, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, R.string.crash_report_not_copied, Toast.LENGTH_SHORT).show()
         return
     }
 
     clipboard.setPrimaryClip(
             ClipData.newPlainText(
-                    getString(R.string.customactivityoncrash_error_activity_error_details_clipboard_label),
+                    getString(R.string.crash_error_activity_error_details_clipboard_label),
                     errorDetails,
             )
     )
-    Toast.makeText(this, R.string.customactivityoncrash_error_activity_error_details_copied, Toast.LENGTH_SHORT).show()
+    Toast.makeText(this, R.string.crash_error_activity_error_details_copied, Toast.LENGTH_SHORT).show()
 }
 
 private fun toComposeColor(value: Int): Color = Color(value.toLong() and 0xFFFFFFFFL)
