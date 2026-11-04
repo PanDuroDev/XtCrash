@@ -5,9 +5,11 @@ package io.github.soufianodev.xtcrash.report
  * accept responsibility for a crash report that XtCrash has already prepared.
  *
  * <p>The handler receives the immutable [PreparedReport], including the exact
- * destination [PreparedReport.url] when one applies. It must not rebuild
- * destination URLs — XtCrash owns title formatting, body formatting, URL
- * construction, encoding, and prefill-shortening decisions.</p>
+ * destination [PreparedReport.url] when one applies. For GitHub and GitLab
+ * destinations, XtCrash invokes the handler only after the user confirms the
+ * URL privacy disclosure. The handler must not rebuild destination URLs —
+ * XtCrash owns title formatting, body formatting, URL construction, encoding,
+ * and prefill-shortening decisions.</p>
  *
  * <p>Process-safe construction: reporting UI runs in the `:xtcrash_error`
  * process, so a handler instance or lambda registered only in the original

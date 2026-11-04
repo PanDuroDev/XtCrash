@@ -18,6 +18,7 @@ Read the [XtCrash documentation website](https://soufianodev.github.io/XtCrash/)
 - [Jetpack Compose](https://soufianodev.github.io/XtCrash/compose/)
 - [Logging and Event Callbacks](https://soufianodev.github.io/XtCrash/logging-and-events/)
 - [API Reference](https://soufianodev.github.io/XtCrash/api-reference/)
+- [XtMapper / cage-xtmapper integration gate](docs/integrations/xtmapper-cage.md)
 
 ## Requirements
 

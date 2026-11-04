@@ -39,6 +39,8 @@ android {
     }
     buildTypes {
         release {
+            // Android library shrinking is performed by the consuming application.
+            // Keep the published AAR's public API intact for consumer-side R8.
             minifyEnabled false
             consumerProguardFiles 'consumer-rules.pro'
         }

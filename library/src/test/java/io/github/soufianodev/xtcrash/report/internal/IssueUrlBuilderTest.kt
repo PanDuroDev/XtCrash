@@ -127,6 +127,25 @@ class IssueUrlBuilderTest {
     }
 
     @Test
+    fun baseUrlsWithEmbeddedCredentialsAreRejected() {
+        assertFalse(IssueUrlBuilder.isSupportedBaseUrl(
+            "https://user:password@gitlab.example.com"))
+        assertFalse(IssueUrlBuilder.isSupportedBaseUrl(
+            "http://token@gitlab.example.com:8443"))
+    }
+
+    @Test
+    fun httpDestinationsRequireAWarningEvenWithoutPrefill() {
+        assertTrue(IssueUrlBuilder.usesUnencryptedHttp(
+            "http://gitlab.example.com/group/project/-/issues/new"))
+        assertTrue(IssueUrlBuilder.usesUnencryptedHttp(
+            "http://gitlab.example.com/group/project/-/issues/new?issue%5Btitle%5D=t"))
+        assertFalse(IssueUrlBuilder.usesUnencryptedHttp(
+            "https://gitlab.example.com/group/project/-/issues/new"))
+        assertFalse(IssueUrlBuilder.usesUnencryptedHttp("not a url"))
+    }
+
+    @Test
     fun configuredBudgetIsClampedToSafeFloor() {
         assertEquals(IssueUrlBuilder.DEFAULT_URL_BUDGET_BYTES, IssueUrlBuilder.clampBudget(null))
         assertEquals(IssueUrlBuilder.MIN_URL_BUDGET_BYTES, IssueUrlBuilder.clampBudget(1))
@@ -229,5 +248,7 @@ class IssueUrlBuilderTest {
         assertFalse(IssueUrlBuilder.isValidIssueUrl("https://"))
         assertFalse(IssueUrlBuilder.isValidIssueUrl("not a url"))
         assertFalse(IssueUrlBuilder.isValidIssueUrl("/relative/path"))
+        assertFalse(IssueUrlBuilder.isValidIssueUrl(
+            "https://user:password@gitlab.example.com/group/project/-/issues/new"))
     }
 }
