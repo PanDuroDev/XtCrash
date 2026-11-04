@@ -12,6 +12,8 @@ internal class ReportHandlerConfirmationState {
         stagedRequestId = requestId
     }
 
+    fun isStagedFor(requestId: String): Boolean = stagedRequestId == requestId
+
     fun consumeFor(requestId: String): Boolean {
         if (stagedRequestId != requestId) return false
         stagedRequestId = null

@@ -8,7 +8,7 @@ import java.io.Serializable
  *
  * <p>Every field is a plain immutable value: no Activity, logger, Binder
  * connection, or mutable internal state crosses the process boundary. The
- * value survives ordinary UI recreation and the `:crash_error` process
+ * value survives ordinary UI recreation and the `:xtcrash_error` process
  * because it is carried in the serialized crash config / intent payload.</p>
  *
  * <p>The canonical [reportText] is always the complete report. Destination

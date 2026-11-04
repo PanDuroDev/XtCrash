@@ -40,4 +40,31 @@ class ReportHandlerConfirmationStateTest {
 
         assertTrue(state.consumeFor("request-current"))
     }
+
+    @Test
+    fun stagedStateIsVisibleOnlyToItsOwnRequest() {
+        val state = ReportHandlerConfirmationState()
+        state.stage("request-1")
+
+        assertTrue(state.isStagedFor("request-1"))
+        assertFalse(state.isStagedFor("request-2"))
+    }
+
+    @Test
+    fun consumedConfirmationIsNoLongerStaged() {
+        val state = ReportHandlerConfirmationState()
+        state.stage("request-1")
+        state.consumeFor("request-1")
+
+        assertFalse(state.isStagedFor("request-1"))
+    }
+
+    @Test
+    fun clearedConfirmationIsNoLongerStaged() {
+        val state = ReportHandlerConfirmationState()
+        state.stage("request-1")
+        state.clearIf("request-1")
+
+        assertFalse(state.isStagedFor("request-1"))
+    }
 }

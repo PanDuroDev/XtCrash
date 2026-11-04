@@ -566,7 +566,10 @@ class ReportDispatcher(
 
         emit(requestId, ReportState(
             Phase.WAITING_USER_ACTION,
-            message = privacyDialogMessage(prepared),
+            message = privacyDialogMessage(
+                prepared,
+                handlerConfirmationStaged = handlerConfirmation.isStagedFor(requestId),
+            ),
             fallbackAvailable = true,
             prepared = prepared,
         ))
@@ -614,7 +617,10 @@ class ReportDispatcher(
      * opened. Built here once so the XML and Compose screens cannot drift; it
      * only claims a clipboard copy when one actually succeeded.
      */
-    private fun privacyDialogMessage(prepared: PreparedReport): String {
+    private fun privacyDialogMessage(
+        prepared: PreparedReport,
+        handlerConfirmationStaged: Boolean,
+    ): String {
         val url = prepared.url
             ?: return context.getString(R.string.crash_report_url_privacy_invalid_url)
         val destination = prepared.destination
@@ -663,14 +669,10 @@ class ReportDispatcher(
             ),
             destination = destinationDetails,
             fields = fieldDetails,
-            handlerDisclosure = if (config.reportActionHandlerClass != null &&
-                ReportHandlerConsentPolicy.requiresConsentBeforeHandler(
-                    destination,
-                    handlerConfigured = true,
-                )
-            ) {
-                // The handler receives the unshortened report; the user must
-                // see that before confirming, in both the XML and Compose UIs.
+            handlerDisclosure = if (handlerConfirmationStaged) {
+                // Staged only when a consent-gated handler will receive the
+                // unshortened report; the user must see that before
+                // confirming. Fallback dialogs (already consumed) omit it.
                 context.getString(R.string.crash_report_url_privacy_handler)
             } else {
                 null
@@ -683,10 +685,10 @@ class ReportDispatcher(
             manualPasteNotCopiedNote = context.getString(R.string.crash_report_manual_paste_pending),
         )
 
-        // Keep the legacy resource so apps that customize it retain localization.
-        // If a customized resource omits %2$s, still show the privacy details.
+        // Reads the legacy-named key so documented app overrides of this
+        // dialog text keep applying (see the strings.xml lint exception).
         val formattedMessage = context.getString(
-            R.string.crash_report_url_privacy_message,
+            R.string.xtcrash_report_url_privacy_message,
             destinationLabel,
             detailsMessage,
         )

@@ -12,7 +12,7 @@ package io.github.soufianodev.xtcrash.report
  * <p>Implementations must be `java.io.Serializable` and declared as a top-level
  * or static (nested, `static`) class, because the sender travels inside the
  * serialized [io.github.soufianodev.xtcrash.config.CrashConfig] into the
- * `:crash_error` process. An anonymous or non-static inner class, or a class
+ * `:xtcrash_error` process. An anonymous or non-static inner class, or a class
  * whose instance fields are not serializable, is rejected at configure time.</p>
  *
  * <p>Invoked on a worker thread, never the main thread. The configured deadline

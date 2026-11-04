@@ -11,7 +11,7 @@ package io.github.soufianodev.xtcrash.report
  * XtCrash owns title formatting, body formatting, URL construction, encoding,
  * and prefill-shortening decisions.</p>
  *
- * <p>Process-safe construction: reporting UI runs in the `:crash_error`
+ * <p>Process-safe construction: reporting UI runs in the `:xtcrash_error`
  * process, so a handler instance or lambda registered only in the original
  * application process is not recoverable there. Configure the handler by class
  * with `reportActionHandler(MyHandler::class.java)`; the class is instantiated
