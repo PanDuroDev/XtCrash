@@ -22,3 +22,6 @@ docs/.astro/
 
 # Generated Dokka HTML; produced by the docs build and never committed.
 docs/public/api/
+
+# Local agent session planning notes; never committed.
+.planning/
