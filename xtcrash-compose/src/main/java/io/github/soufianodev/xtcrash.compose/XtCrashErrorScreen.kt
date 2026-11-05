@@ -181,7 +181,7 @@ fun XtCrashErrorScreen(
 
                     if (config.isShowCrashId) {
                         Text(
-                                text = stringResource(R.string.crash_id_format, crashId),
+                                text = stringResource(R.string.xtcrash_crash_id_format, crashId),
                                 textAlign = TextAlign.Center,
                                 color = toComposeColor(config.metaTextColor),
                                 fontSize = 12.sp,
@@ -234,7 +234,7 @@ fun XtCrashErrorScreen(
 
                     if (config.isShowAppInfo) {
                         Text(
-                                text = stringResource(R.string.crash_version_format, CrashActivity.VERSION),
+                                text = stringResource(R.string.xtcrash_version_format, CrashActivity.VERSION),
                                 textAlign = TextAlign.Center,
                                 color = toComposeColor(config.metaTextColor),
                                 fontSize = 12.sp,
@@ -377,7 +377,7 @@ private fun PrivacyConfirmDialog(
     AlertDialog(
             onDismissRequest = onDismiss,
             title = {
-                Text(stringResource(R.string.crash_report_url_privacy_title, destinationLabel))
+                Text(stringResource(R.string.xtcrash_report_url_privacy_title, destinationLabel))
             },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = 320.dp)) {
@@ -386,12 +386,12 @@ private fun PrivacyConfirmDialog(
             },
             confirmButton = {
                 TextButton(onClick = onConfirm) {
-                    Text(stringResource(R.string.crash_report_url_continue))
+                    Text(stringResource(R.string.xtcrash_report_url_continue))
                 }
             },
             dismissButton = {
                 TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.crash_report_url_cancel))
+                    Text(stringResource(R.string.xtcrash_report_url_cancel))
                 }
             },
     )
@@ -425,7 +425,7 @@ private fun ExplicitFallbackDialog(
             confirmButton = {
                 if (hasWebUrl) {
                     TextButton(onClick = onOpenIssue) {
-                        Text(stringResource(R.string.crash_report_open_issue))
+                        Text(stringResource(R.string.xtcrash_report_open_issue))
                     }
                 } else {
                     TextButton(onClick = onDismiss) {
@@ -435,7 +435,7 @@ private fun ExplicitFallbackDialog(
             },
             dismissButton = {
                 TextButton(onClick = onCopy) {
-                    Text(stringResource(R.string.crash_report_copy))
+                    Text(stringResource(R.string.xtcrash_report_copy))
                 }
             },
     )
@@ -445,7 +445,7 @@ private fun Context.copyErrorToClipboard(errorDetails: String) {
     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
     if (clipboard == null) {
         // Only report success after the clipboard operation actually succeeds.
-        Toast.makeText(this, R.string.crash_report_not_copied, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, R.string.xtcrash_report_not_copied, Toast.LENGTH_SHORT).show()
         return
     }
 

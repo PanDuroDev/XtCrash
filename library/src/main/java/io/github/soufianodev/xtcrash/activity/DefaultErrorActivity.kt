@@ -173,7 +173,7 @@ class DefaultErrorActivity : AppCompatActivity() {
             crashIdView.setTextColor(config.metaTextColor)
             if (config.isShowCrashId) {
                 crashIdView.visibility = View.VISIBLE
-                crashIdView.text = getString(R.string.crash_id_format, CrashActivity.getCrashIdFromIntent(intent))
+                crashIdView.text = getString(R.string.xtcrash_crash_id_format, CrashActivity.getCrashIdFromIntent(intent))
             } else {
                 crashIdView.visibility = View.GONE
             }
@@ -183,7 +183,7 @@ class DefaultErrorActivity : AppCompatActivity() {
             appInfoView.setTextColor(config.metaTextColor)
             if (config.isShowAppInfo) {
                 appInfoView.visibility = View.VISIBLE
-                appInfoView.text = getString(R.string.crash_version_format, CrashActivity.VERSION)
+                appInfoView.text = getString(R.string.xtcrash_version_format, CrashActivity.VERSION)
             } else {
                 appInfoView.visibility = View.GONE
             }
@@ -319,15 +319,15 @@ class DefaultErrorActivity : AppCompatActivity() {
         reportDialog?.dismiss()
         reportDialogState = state
         reportDialog = AlertDialog.Builder(this)
-                .setTitle(getString(R.string.crash_report_url_privacy_title, destinationLabel))
+                .setTitle(getString(R.string.xtcrash_report_url_privacy_title, destinationLabel))
                 .setMessage(state.message ?: "")
-                .setPositiveButton(R.string.crash_report_url_continue) { _, _ ->
+                .setPositiveButton(R.string.xtcrash_report_url_continue) { _, _ ->
                     if (reportDialogState === state) {
                         reportDialogState = null
                         creatingDispatcher.confirmWebUrl()
                     }
                 }
-                .setNegativeButton(R.string.crash_report_url_cancel) { _, _ ->
+                .setNegativeButton(R.string.xtcrash_report_url_cancel) { _, _ ->
                     if (reportDialogState === state) {
                         reportDialogState = null
                         creatingDispatcher.cancelPending()
@@ -361,14 +361,14 @@ class DefaultErrorActivity : AppCompatActivity() {
                 || destination == io.github.soufianodev.xtcrash.report.ReportDestination.GITLAB)
                 && prepared?.url != null
         if (hasWebUrl) {
-            builder.setPositiveButton(R.string.crash_report_open_issue) { _, _ ->
+            builder.setPositiveButton(R.string.xtcrash_report_open_issue) { _, _ ->
                 if (reportDialogState === state) {
                     reportDialogState = null
                     creatingDispatcher.requestWebUrlConfirmation()
                 }
             }
         }
-        builder.setNeutralButton(R.string.crash_report_copy) { _, _ ->
+        builder.setNeutralButton(R.string.xtcrash_report_copy) { _, _ ->
             if (reportDialogState === state) {
                 reportDialogState = null
                 creatingDispatcher.copyReportForFallback()
@@ -432,7 +432,7 @@ class DefaultErrorActivity : AppCompatActivity() {
             ).show()
         } else {
             // Only report success after the clipboard operation actually succeeds.
-            Toast.makeText(this, R.string.crash_report_not_copied, Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.xtcrash_report_not_copied, Toast.LENGTH_SHORT).show()
         }
     }
 }

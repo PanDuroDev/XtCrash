@@ -12,44 +12,44 @@
     <string name="customactivityoncrash_error_activity_error_details_clipboard_label" tools:ignore="ResourceName">XtCrash error information</string>
 
     <!-- XtCrash strings. -->
-    <string name="crash_send_report">Send crash report</string>
-    <string name="crash_id_format">Crash ID: %1$s</string>
-    <string name="crash_version_format">XtCrash v%1$s</string>
-    <string name="crash_default_report_subject">Crash report - %1$s - %2$s</string>
-    <string name="crash_default_report_subject_no_id">Crash report - %1$s</string>
-    <string name="crash_no_share_app_found">No app found to share the report. Crash details were copied instead.</string>
-    <string name="crash_report_not_copied">Could not copy the report to the clipboard.</string>
-    <string name="crash_report_copied">The full report was copied to the clipboard.</string>
-    <string name="crash_report_no_email_client">No email app found on this device.</string>
-    <string name="crash_report_email_copied">The full report was copied to the clipboard — paste it into an email and send it manually.</string>
-    <string name="crash_report_destination_github">GitHub</string>
-    <string name="crash_report_destination_gitlab">GitLab</string>
-    <string name="crash_report_url_privacy_invalid_url">No valid issue URL is available.</string>
-    <string name="crash_report_url_privacy_unknown_host">unknown host</string>
-    <string name="crash_report_url_privacy_unknown_scheme">unknown</string>
-    <string name="crash_report_url_privacy_destination">Open the %1$s issue page at %2$s? The destination may receive any values in this URL before you submit the issue.\n\n%3$s</string>
-    <string name="crash_report_url_privacy_title_field">Title: \"%1$s\"</string>
-    <string name="crash_report_url_privacy_description_field">Description: \"%1$s\"</string>
-    <string name="crash_report_url_privacy_no_prefill">The URL does not prefill a title or description; you will need to enter them on the issue page.</string>
-    <string name="crash_report_url_privacy_fields_present">Fields present in the URL:\n%1$s</string>
-    <string name="crash_report_url_privacy_title">Send report via %1$s?</string>
+    <string name="xtcrash_send_crash_report" tools:ignore="ResourceName">Send crash report</string>
+    <string name="xtcrash_crash_id_format" tools:ignore="ResourceName">Crash ID: %1$s</string>
+    <string name="xtcrash_version_format" tools:ignore="ResourceName">XtCrash v%1$s</string>
+    <string name="xtcrash_default_report_subject" tools:ignore="ResourceName">Crash report - %1$s - %2$s</string>
+    <string name="xtcrash_default_report_subject_no_id" tools:ignore="ResourceName">Crash report - %1$s</string>
+    <string name="xtcrash_no_share_app_found" tools:ignore="ResourceName">No app found to share the report. Crash details were copied instead.</string>
+    <string name="xtcrash_report_not_copied" tools:ignore="ResourceName">Could not copy the report to the clipboard.</string>
+    <string name="xtcrash_report_copied" tools:ignore="ResourceName">The full report was copied to the clipboard.</string>
+    <string name="xtcrash_report_no_email_client" tools:ignore="ResourceName">No email app found on this device.</string>
+    <string name="xtcrash_report_email_copied" tools:ignore="ResourceName">The full report was copied to the clipboard — paste it into an email and send it manually.</string>
+    <string name="xtcrash_report_destination_github" tools:ignore="ResourceName">GitHub</string>
+    <string name="xtcrash_report_destination_gitlab" tools:ignore="ResourceName">GitLab</string>
+    <string name="xtcrash_report_url_privacy_invalid_url" tools:ignore="ResourceName">No valid issue URL is available.</string>
+    <string name="xtcrash_report_url_privacy_unknown_host" tools:ignore="ResourceName">unknown host</string>
+    <string name="xtcrash_report_url_privacy_unknown_scheme" tools:ignore="ResourceName">unknown</string>
+    <string name="xtcrash_report_url_privacy_destination" tools:ignore="ResourceName">Open the %1$s issue page at %2$s? The destination may receive any values in this URL before you submit the issue.\n\n%3$s</string>
+    <string name="xtcrash_report_url_privacy_title_field" tools:ignore="ResourceName">Title: \"%1$s\"</string>
+    <string name="xtcrash_report_url_privacy_description_field" tools:ignore="ResourceName">Description: \"%1$s\"</string>
+    <string name="xtcrash_report_url_privacy_no_prefill" tools:ignore="ResourceName">The URL does not prefill a title or description; you will need to enter them on the issue page.</string>
+    <string name="xtcrash_report_url_privacy_fields_present" tools:ignore="ResourceName">Fields present in the URL:\n%1$s</string>
+    <string name="xtcrash_report_url_privacy_title" tools:ignore="ResourceName">Send report via %1$s?</string>
     <!-- Prefer the documented override name over the module prefix (scoped lint exception). -->
     <string name="xtcrash_report_url_privacy_message" tools:ignore="ResourceName">Opening the %1$s issue URL may send query values to that service before you submit the issue. Review the destination and fields below before continuing.\n\n%2$s</string>
-    <string name="crash_report_url_prefill_disclosure">Opening this URL may send the prefilled title or description to %1$s before you submit the issue. The destination may process these values as soon as the page opens.</string>
-    <string name="crash_report_url_destination_format">Destination URL: %1$s</string>
-    <string name="crash_report_http_warning">Warning: this destination uses unencrypted HTTP. Data sent between this device and %1$s is not protected by TLS and may be read or modified by network observers. This includes issue URL values and report content pasted after the page opens. Continue only on a trusted network.</string>
-    <string name="crash_report_url_continue">Continue</string>
-    <string name="crash_report_url_cancel">Cancel</string>
-    <string name="crash_report_manual_paste">The report was copied to the clipboard. Paste it into the issue form before submitting.</string>
-    <string name="crash_report_manual_paste_not_copied">The report is too long to prefill and could not be copied. Please copy it from the error details screen and paste it into the issue form.</string>
-    <string name="crash_report_manual_paste_pending">The issue form does not contain the full report. If you select Continue, XtCrash will try to copy the full report to the device clipboard. If copying succeeds, paste the report into the issue form before submitting. Otherwise, copy it from the error details screen.</string>
+    <string name="xtcrash_report_url_prefill_disclosure" tools:ignore="ResourceName">Opening this URL may send the prefilled title or description to %1$s before you submit the issue. The destination may process these values as soon as the page opens.</string>
+    <string name="xtcrash_report_url_destination_format" tools:ignore="ResourceName">Destination URL: %1$s</string>
+    <string name="xtcrash_report_http_warning" tools:ignore="ResourceName">Warning: this destination uses unencrypted HTTP. Data sent between this device and %1$s is not protected by TLS and may be read or modified by network observers. This includes issue URL values and report content pasted after the page opens. Continue only on a trusted network.</string>
+    <string name="xtcrash_report_url_continue" tools:ignore="ResourceName">Continue</string>
+    <string name="xtcrash_report_url_cancel" tools:ignore="ResourceName">Cancel</string>
+    <string name="xtcrash_report_manual_paste" tools:ignore="ResourceName">The report was copied to the clipboard. Paste it into the issue form before submitting.</string>
+    <string name="xtcrash_report_manual_paste_not_copied" tools:ignore="ResourceName">The report is too long to prefill and could not be copied. Please copy it from the error details screen and paste it into the issue form.</string>
+    <string name="xtcrash_report_manual_paste_pending" tools:ignore="ResourceName">The issue form does not contain the full report. If you select Continue, XtCrash will try to copy the full report to the device clipboard. If copying succeeds, paste the report into the issue form before submitting. Otherwise, copy it from the error details screen.</string>
     <string name="crash_report_url_privacy_handler">When you select Continue, this app\'s report handler will receive the complete report, including details that are not visible in the destination preview above.</string>
-    <string name="crash_report_paste_instruction">Copy the report, then paste it before submitting.</string>
-    <string name="crash_report_no_browser">No app was found to open the issue page.</string>
-    <string name="crash_report_accepted">Report request queued.</string>
-    <string name="crash_report_unknown">The report handoff outcome is uncertain. Do not retry automatically — use the fallback below if needed.</string>
-    <string name="crash_report_failed">Could not hand off the report. The fallback below is available.</string>
-    <string name="crash_report_config_invalid">Reporting is not configured correctly for this destination. The report is still available to copy or share.</string>
-    <string name="crash_report_open_issue">Open issue page</string>
-    <string name="crash_report_copy">Copy report</string>
+    <string name="xtcrash_report_paste_instruction" tools:ignore="ResourceName">Copy the report, then paste it before submitting.</string>
+    <string name="xtcrash_report_no_browser" tools:ignore="ResourceName">No app was found to open the issue page.</string>
+    <string name="xtcrash_report_accepted" tools:ignore="ResourceName">Report request queued.</string>
+    <string name="xtcrash_report_unknown" tools:ignore="ResourceName">The report handoff outcome is uncertain. Do not retry automatically — use the fallback below if needed.</string>
+    <string name="xtcrash_report_failed" tools:ignore="ResourceName">Could not hand off the report. The fallback below is available.</string>
+    <string name="xtcrash_report_config_invalid" tools:ignore="ResourceName">Reporting is not configured correctly for this destination. The report is still available to copy or share.</string>
+    <string name="xtcrash_report_open_issue" tools:ignore="ResourceName">Open issue page</string>
+    <string name="xtcrash_report_copy" tools:ignore="ResourceName">Copy report</string>
 </resources>

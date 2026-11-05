@@ -92,7 +92,7 @@
                     android:layout_height="50dp"
                     android:layout_marginTop="10dp"
                     android:background="#D50000"
-                    android:text="@string/crash_send_report"
+                    android:text="@string/xtcrash_send_crash_report"
                     android:textAllCaps="false"
                     android:textColor="@android:color/white"
                     android:textStyle="bold"
